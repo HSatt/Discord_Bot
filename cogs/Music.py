@@ -6,7 +6,8 @@ import discord
 import youtube_dl
 
 from discord.ext import commands
-
+import mutagen
+import ffmpeg
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -66,6 +67,8 @@ class Music(commands.Cog):
             return await ctx.voice_client.move_to(channel)
 
         await channel.connect()
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio("Data/sounds/カードが必要なら.wav"))
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
     async def play(self, ctx, *, query):
@@ -75,6 +78,15 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
         await ctx.send(f'Now playing: {query}')
+    
+    @commands.command()
+    async def length(self, ctx, query):
+        """get length"""
+        probe = ffmpeg.probe(query)
+        stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
+        duration = float(stream['duration'])
+        print(duration)
+        ctx.reply(duration)
 
     @commands.command()
     async def yt(self, ctx, *, url):
