@@ -114,6 +114,19 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             print(f'\033[1m>>>>> {before_tweet} <<<<<\033[0m')
         except:
             await ctx.reply('The user you typed is either suspended or misspelled.')
-
+    
+    @commands.command(
+        name="unfollow", # コマンドの名前。設定しない場合は関数名
+    )
+    async def unfollow(self, ctx, name: str):
+        try:
+            del followed[name]
+            print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Succesfully unfollowed {name}!')
+            await ctx.reply(f'Succesfully unfollowed [{name}](https://x.com/{name})!')
+            with open("data/tweet.json", "w+", encoding="utf-8") as f:
+                json.dump(followed, f)
+        except:
+            await ctx.reply('The user you typed is not followed.')
+        
 async def setup(bot: commands.Bot):
     await bot.add_cog(tweet(bot))

@@ -38,6 +38,7 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix='*', description=description, intents=intents) # ここにcommands.Botで使ってたパラメータを入れる
     
     async def setup_hook(self) -> None: # ログインする前に実行されるイベント
+        await bot.load_extension("jishaku")
         for extension in initial_extensions: 
             try:
                 await self.load_extension(extension)
