@@ -16,7 +16,7 @@ initial_extensions = (
     "cogs.delete",
     "cogs.gamble",
     "cogs.youtube",
-    "cogs.tweet"
+    "cogs.tweet",
 )
 
 description = '''Hello.

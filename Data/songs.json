@@ -1,0 +1,20 @@
+{
+    "files_dir": "C:/Users/hatos/Music/NA",
+    "songs": [
+        {
+            "song_keys": [
+                "song a",
+                "a"
+            ],
+            "artist_keys": [
+                "ham spam egg",
+                "hse"
+            ],
+            "album_keys": [
+                "super songs",
+                "ss"
+            ],
+            "filename": "SayItBack.flac"
+        }
+    ]
+}
