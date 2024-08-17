@@ -9,6 +9,7 @@ from discord.ext import commands
 import mutagen
 import ffmpeg
 import ffprobe
+import math
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -78,16 +79,35 @@ class Music(commands.Cog):
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
-        await ctx.send(f'Now playing: {query}')
-    
+        await ctx.reply(f'Now playing: {query}')
+
+    @commands.command()
+    async def sound(self, ctx, *, query):
+        query = f'data/sounds/{query}'
+        print(f'Playing {query}')
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+        await ctx.reply(f'Now playing: {query}')
+
     @commands.command()
     async def length(self, ctx, query):
         """get length"""
         probe = ffmpeg.probe(query, cmd='ffprobe')
         stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
         duration = float(stream['duration'])
-        print(duration)
-        ctx.reply(duration)
+        print(f'This song is {duration}s long.')
+        ctx.reply(f'This song is {duration}s long.')
+        duration = math.ceil(duration)
+        return duration
+
+    @commands.command()
+    async def playloop(self, ctx, query):
+        """Plays a file from the local filesystem in loop"""
+        await ctx.send(f'Now playing: {query}')
+        while True:
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else self.bot.loop.create_task(self.playloop(ctx, query)))
+            
 
     @commands.command()
     async def yt(self, ctx, *, url):
