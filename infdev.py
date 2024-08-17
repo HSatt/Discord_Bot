@@ -7,7 +7,7 @@ import time
 import asyncio
 from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
-from cogs import getnatori, fuck, delete, gamble, youtube, tweet
+from cogs import getnatori, fuck, delete, gamble, youtube, tweet, Music
 import json
 
 initial_extensions = (
@@ -17,6 +17,7 @@ initial_extensions = (
     "cogs.gamble",
     "cogs.youtube",
     "cogs.tweet",
+    "cogs.Music"
 )
 
 description = '''Hello.
