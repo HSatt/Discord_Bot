@@ -34,7 +34,7 @@ ffmpeg_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
-
+prev_channel = '0'
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -62,20 +62,23 @@ class Music(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def join(self, ctx, *, channel: discord.VoiceChannel):
+    async def join(self, ctx):
         """Joins a voice channel"""
-
-        if ctx.voice_client is not None:
-            return await ctx.voice_client.move_to(channel)
-
-        await channel.connect()
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio("Data/sounds/カードが必要なら.wav"))
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+        global prev_channel
+        if not ctx.message.author.voice:
+            await ctx.send("{} is not connected to a voice channel".format(ctx.message.author.name))
+            return
+        elif ctx.message.author.voice.channel.id == prev_channel:
+            pass
+        else:
+            channel = ctx.message.author.voice.channel
+            prev_channel = ctx.message.author.voice.channel.id
+            await channel.connect()
 
     @commands.command()
     async def play(self, ctx, *, query):
         """Plays a file from the local filesystem"""
-
+        await self.join(ctx)
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
@@ -84,9 +87,10 @@ class Music(commands.Cog):
     @commands.command()
     async def sound(self, ctx, *, query):
         query = f'data/sounds/{query}'
+        await self.join(ctx)
         print(f'Playing {query}')
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(ctx.voice_client.disconnect()))
         await ctx.reply(f'Now playing: {query}')
 
     @commands.command()
@@ -103,10 +107,10 @@ class Music(commands.Cog):
     @commands.command()
     async def playloop(self, ctx, query):
         """Plays a file from the local filesystem in loop"""
+        query = f'data/sounds/Music/{query}'
         await ctx.send(f'Now playing: {query}')
-        while True:
-            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-            ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else self.bot.loop.create_task(self.playloop(ctx, query)))
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else self.bot.loop.create_task(self.playloop(ctx, query)))
             
 
     @commands.command()
@@ -142,7 +146,7 @@ class Music(commands.Cog):
     @commands.command()
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
-
+        await ctx.reply('cya mate')
         await ctx.voice_client.disconnect()
 
     @play.before_invoke
