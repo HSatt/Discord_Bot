@@ -61,7 +61,6 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
     async def join(self, ctx):
         """Joins a voice channel"""
         global prev_channel
@@ -74,6 +73,12 @@ class Music(commands.Cog):
             channel = ctx.message.author.voice.channel
             prev_channel = ctx.message.author.voice.channel.id
             await channel.connect()
+
+    @commands.command()
+    async def call(self,ctx):
+        await self.join(ctx)
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio("Data/sounds/カードが必要なら.wav"))
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
     async def play(self, ctx, *, query):
@@ -90,8 +95,10 @@ class Music(commands.Cog):
         await self.join(ctx)
         print(f'Playing {query}')
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(ctx.voice_client.disconnect()))
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.stop(ctx)))
         await ctx.reply(f'Now playing: {query}')
+        global prev_channel
+        prev_channel = '0'
 
     @commands.command()
     async def length(self, ctx, query):
@@ -146,8 +153,10 @@ class Music(commands.Cog):
     @commands.command()
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
-        await ctx.reply('cya mate')
+        await ctx.reply('Player done!')
         await ctx.voice_client.disconnect()
+        global prev_channel
+        prev_channel = '0'
 
     @play.before_invoke
     @yt.before_invoke
