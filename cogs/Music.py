@@ -114,7 +114,7 @@ class Music(commands.Cog):
     @commands.command()
     async def playloop(self, ctx, query):
         """Plays a file from the local filesystem in loop"""
-        query = f'data/sounds/Music/{query}'
+        await self.join(ctx)
         await ctx.send(f'Now playing: {query}')
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
         ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else self.bot.loop.create_task(self.playloop(ctx, query)))
