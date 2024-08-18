@@ -23,6 +23,14 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
     )
     async def fuck(self, ctx):
         await ctx.reply(f'Fuck Off {ctx.author.mention}')
+    
+    @commands.command(
+        name="mass_mention", # コマンドの名前。設定しない場合は関数名
+        aliases=["mass", "mass_murder"] # ?hiでも ?heyでも反応するようになる
+    )
+    async def mass_mention(self, ctx, target):
+        for i in range(10):
+            await ctx.send(f'Fuck Off {ctx.author.mention}')
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(fuck(bot))

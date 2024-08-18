@@ -77,7 +77,8 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
     
     @commands.command(
         name="fetch_tweet", # コマンドの名前。設定しない場合は関数名
-        aliases=['tweet']
+        aliases=['tweet'],
+        desctiption='人のつい～とを取ってきてくれるコマンドです'
     )
     async def fetch_tweet(self, ctx, screen_name: str, order: int) -> Tweet:
         try:
