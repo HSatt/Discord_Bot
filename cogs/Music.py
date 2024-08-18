@@ -5,7 +5,7 @@ import asyncio
 import discord
 import youtube_dl
 
-from discord.ext import commands
+from discord.ext import tasks, commands
 import mutagen
 import ffmpeg
 import ffprobe
@@ -35,6 +35,9 @@ ffmpeg_options = {
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 prev_channel = '0'
+
+duration = float(0)
+
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -67,12 +70,12 @@ class Music(commands.Cog):
         if not ctx.message.author.voice:
             await ctx.send("{} is not connected to a voice channel".format(ctx.message.author.name))
             return
-        elif ctx.message.author.voice.channel.id == prev_channel:
-            pass
         else:
             channel = ctx.message.author.voice.channel
-            prev_channel = ctx.message.author.voice.channel.id
-            await channel.connect()
+            try:
+                await channel.connect()
+            except:
+                pass
 
     @commands.command()
     async def call(self,ctx):
@@ -105,20 +108,35 @@ class Music(commands.Cog):
         """get length"""
         probe = ffmpeg.probe(query, cmd='ffprobe')
         stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
+        global duration
         duration = float(stream['duration'])
         print(f'This song is {duration}s long.')
-        ctx.reply(f'This song is {duration}s long.')
-        duration = math.ceil(duration)
+        await ctx.reply(f'This song is {duration}s long.')
         return duration
 
     @commands.command()
     async def playloop(self, ctx, query):
         """Plays a file from the local filesystem in loop"""
+        global loop
+        loop = True
         await self.join(ctx)
-        await ctx.send(f'Now playing: {query}')
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-        ctx.voice_client.play(source, after=lambda e: print('Player error: %s' % e) if e else self.bot.loop.create_task(self.playloop(ctx, query)))
-            
+        while True:
+            if ctx.voice_client.is_playing():
+                await asyncio.sleep(0.01)
+            else:
+                if loop == True:
+                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+                    ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+                else:
+                    break
+        await self.stop(ctx)
+        
+    @commands.command()
+    async def loop(self, ctx):
+        """omg! loop feature"""
+        global loop
+        loop = False
+        await ctx.reply('aight bro its gonna stop as soon as this track ends')
 
     @commands.command()
     async def yt(self, ctx, *, url):
