@@ -10,6 +10,7 @@ import mutagen
 import ffmpeg
 import ffprobe
 import math
+
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -38,7 +39,7 @@ ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 duration = float(0)
 
-zunda = "https://cdn.discordapp.com/emojis/1183011525947047957.png&quality=lossless"
+zunda = 'https://i.imgur.com/6bgRNLR.png'
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -78,13 +79,17 @@ class Music(commands.Cog):
             except:
                 pass
 
-    async def embed(self, ctx, query):
+    async def embed(self, ctx, query, player_loop=False):
         """Makes embed for reply"""
+        if player_loop == True:
+            player_loop = str('✅')
+        else:
+            player_loop = str('❌')
         global music_embed
         self.music_embed = discord.Embed( # Embedを定義する
                               title = "Now Playing...",# タイトル
                               color = 0x191919, # フレーム色指定
-                              description = query, # Embedの説明文
+                              description = f'{query}\nLooping: {player_loop}', # Embedの説明文
                               )
         self.music_embed.set_author(name = 'ローカルファイル再生Bot', # Botのユーザー名
                          url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
@@ -104,12 +109,10 @@ class Music(commands.Cog):
     @commands.command()
     async def play(self, ctx, query, player_loop=False):
         """Plays a file from the local filesystem"""
+        await ctx.reply(embed=await self.embed(ctx, query=query, player_loop=player_loop))
         if player_loop == True:
-            await ctx.reply('Looping Enabled!')
-            """Plays a file from the local filesystem in loop"""
             global loop
             loop = True
-            await ctx.reply(embed=await self.embed(ctx, query=query))
             await self.join(ctx)
             while True:
                 if ctx.voice_client.is_playing():
@@ -125,7 +128,6 @@ class Music(commands.Cog):
             await self.join(ctx)
             source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
             ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-            await ctx.reply(embed=await self.embed(ctx, query=query))
 
     @commands.command()
     async def sound(self, ctx, *, query):
