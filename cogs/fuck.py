@@ -60,7 +60,7 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
                     await print('Failed to delete message.')
                     return
                 finally:
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.1)
         print(fucked)
 
 async def setup(bot: commands.Bot):
