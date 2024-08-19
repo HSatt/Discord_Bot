@@ -119,6 +119,7 @@ class Music(commands.Cog):
         """Plays a file from the local filesystem in loop"""
         global loop
         loop = True
+        await ctx.reply(f'Now playing {query}')
         await self.join(ctx)
         while True:
             if ctx.voice_client.is_playing():
