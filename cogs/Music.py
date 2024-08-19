@@ -102,11 +102,25 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, query, loop=False):
+    async def play(self, ctx, query, player_loop=False):
         """Plays a file from the local filesystem"""
-        if loop == True:
+        if player_loop == True:
             await ctx.reply('Looping Enabled!')
-            await self.playloop(ctx, query)
+            """Plays a file from the local filesystem in loop"""
+            global loop
+            loop = True
+            await ctx.reply(embed=await self.embed(ctx, query=query))
+            await self.join(ctx)
+            while True:
+                if ctx.voice_client.is_playing():
+                    await asyncio.sleep(0.01)
+                else:
+                    if loop == True:
+                        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+                        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+                    else:
+                        break
+            await self.stop(ctx)
         else:
             await self.join(ctx)
             source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
@@ -133,24 +147,6 @@ class Music(commands.Cog):
         print(f'This song is {duration}s long.')
         await ctx.reply(f'This song is {duration}s long.')
         return duration
-
-    @commands.command()
-    async def playloop(self, ctx, query):
-        """Plays a file from the local filesystem in loop"""
-        global loop
-        loop = True
-        await ctx.reply(embed=await self.embed(ctx, query=query))
-        await self.join(ctx)
-        while True:
-            if ctx.voice_client.is_playing():
-                await asyncio.sleep(0.01)
-            else:
-                if loop == True:
-                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-                    ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-                else:
-                    break
-        await self.stop(ctx)
         
     @commands.command()
     async def loop(self, ctx):
