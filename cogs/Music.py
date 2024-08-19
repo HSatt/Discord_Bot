@@ -34,9 +34,11 @@ ffmpeg_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
-prev_channel = '0'
+# 指定しておかないとなんか動かない者たち
 
 duration = float(0)
+
+zunda = "https://cdn.discordapp.com/emojis/1183011525947047957.png&quality=lossless"
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -66,7 +68,6 @@ class Music(commands.Cog):
 
     async def join(self, ctx):
         """Joins a voice channel"""
-        global prev_channel
         if not ctx.message.author.voice:
             await ctx.send("{} is not connected to a voice channel".format(ctx.message.author.name))
             return
@@ -77,6 +78,23 @@ class Music(commands.Cog):
             except:
                 pass
 
+    async def embed(self, ctx, query):
+        """Makes embed for reply"""
+        global music_embed
+        self.music_embed = discord.Embed( # Embedを定義する
+                              title = "Now Playing...",# タイトル
+                              color = 0x191919, # フレーム色指定
+                              description = query, # Embedの説明文
+                              )
+        self.music_embed.set_author(name = 'ローカルファイル再生Bot', # Botのユーザー名
+                         url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
+                         icon_url = zunda # Botのアイコンを設定してみる
+                         )
+        self.music_embed.set_thumbnail(url = "https://image.example.com/thumbnail.png") # サムネイルとして小さい画像を設定できる
+        self.music_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
+                                icon_url = zunda)
+        return self.music_embed
+
     @commands.command()
     async def call(self,ctx):
         await self.join(ctx)
@@ -84,13 +102,16 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, *, query):
+    async def play(self, ctx, query, loop=False):
         """Plays a file from the local filesystem"""
-        await self.join(ctx)
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-
-        await ctx.reply(f'Now playing: {query}')
+        if loop == True:
+            await ctx.reply('Looping Enabled!')
+            await self.playloop(ctx, query)
+        else:
+            await self.join(ctx)
+            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+            ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+            await ctx.reply(embed=await self.embed(ctx, query=query))
 
     @commands.command()
     async def sound(self, ctx, *, query):
@@ -99,9 +120,8 @@ class Music(commands.Cog):
         print(f'Playing {query}')
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.stop(ctx)))
-        await ctx.reply(f'Now playing: {query}')
+        await ctx.reply(embed=await self.embed(ctx, query=query))
         global prev_channel
-        prev_channel = '0'
 
     @commands.command()
     async def length(self, ctx, query):
@@ -119,7 +139,7 @@ class Music(commands.Cog):
         """Plays a file from the local filesystem in loop"""
         global loop
         loop = True
-        await ctx.reply(f'Now playing {query}')
+        await ctx.reply(embed=await self.embed(ctx, query=query))
         await self.join(ctx)
         while True:
             if ctx.voice_client.is_playing():
