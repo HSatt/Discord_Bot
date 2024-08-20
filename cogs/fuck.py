@@ -12,6 +12,7 @@ from ytnoti import AsyncYouTubeNotifier, Video
 Manage_Channel = 1273134816308625439
 # target list
 fucked = []
+
 # MAKE IT COGGY
 class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
