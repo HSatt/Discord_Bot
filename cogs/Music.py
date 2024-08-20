@@ -6,10 +6,11 @@ import discord
 import youtube_dl
 
 from discord.ext import tasks, commands
-import mutagen
 import ffmpeg
 import ffprobe
 import math
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, APIC
 
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
@@ -70,7 +71,7 @@ class Music(commands.Cog):
     async def join(self, ctx):
         """Joins a voice channel"""
         if not ctx.message.author.voice:
-            await ctx.send("{} is not connected to a voice channel".format(ctx.message.author.name))
+            await ctx.send(f"{ctx.message.author.name} is not connected to a voice channel")
             return
         else:
             channel = ctx.message.author.voice.channel
@@ -79,12 +80,29 @@ class Music(commands.Cog):
             except:
                 pass
 
+    def get_mp3_thumbnail(self, file_path):
+        audio = MP3(file_path, ID3=ID3)
+        for tag in audio.tags.values():
+            if isinstance(tag, APIC):
+                with open("data/thumbnail.jpg", "wb") as img:
+                    img.write(tag.data)
+                return "data/thumbnail.jpg"
+        return None
+
     async def embed(self, ctx, query, player_loop=False):
         """Makes embed for reply"""
+        # emojify T/F
         if player_loop == True:
             player_loop = str('✅')
         else:
             player_loop = str('❌')
+
+        # カバーアート情報取得
+        thumbnail_path = self.get_mp3_thumbnail(file_path=query)
+        if thumbnail_path:
+            print(f"サムネイルを保存しました: {thumbnail_path}")
+        else:
+            print("サムネイルが見つかりませんでした。")
         global music_embed
         self.music_embed = discord.Embed( # Embedを定義する
                               title = "Now Playing...",# タイトル
@@ -95,10 +113,12 @@ class Music(commands.Cog):
                          url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
                          icon_url = zunda # Botのアイコンを設定してみる
                          )
-        self.music_embed.set_thumbnail(url = "https://image.example.com/thumbnail.png") # サムネイルとして小さい画像を設定できる
+        self.music_embed.set_thumbnail(url = "attachment://image.jpg") # サムネイルとして小さい画像を設定できる
         self.music_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                                 icon_url = zunda)
-        return self.music_embed
+        file = discord.File(thumbnail_path, filename="temp.jpg")
+        self.music_embed.set_image(url="attachment://image.jpg")
+        await ctx.reply(embed=self.music_embed, file=file)
 
     @commands.command()
     async def call(self,ctx):
@@ -109,7 +129,7 @@ class Music(commands.Cog):
     @commands.command()
     async def play(self, ctx, query, player_loop=False):
         """Plays a file from the local filesystem"""
-        await ctx.reply(embed=await self.embed(ctx, query=query, player_loop=player_loop))
+        await self.embed(ctx, query=query, player_loop=player_loop)
         if player_loop == True:
             global loop
             loop = True
