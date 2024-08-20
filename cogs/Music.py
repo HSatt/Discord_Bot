@@ -11,7 +11,7 @@ import ffprobe
 import math
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
-
+from mutagen import MutagenError
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -134,17 +134,20 @@ class Music(commands.Cog):
     @commands.command()
     async def play(self, ctx, query, player_loop=False):
         """Plays a file from the local filesystem"""
-        music_queue.append(query)
-        print(music_queue)
-        await self.embed(ctx, query=query, player_loop=player_loop)
-        if music_queue == [query]:
-            if player_loop == True:
-                global loop
-                loop = True
-            await self.join(ctx)
-            await self.looping(ctx, query=query, player_loop=player_loop)
-        else:
-            None
+        try:
+            await self.embed(ctx, query=query, player_loop=player_loop)
+            music_queue.append(query)
+            print(music_queue)
+            if music_queue == [query]:
+                if player_loop == True:
+                    global loop
+                    loop = True
+                await self.join(ctx)
+                await self.looping(ctx, query=query, player_loop=player_loop)
+            else:
+                None
+        except MutagenError:
+            await ctx.reply(f'The pass you entered({query}) does not exist.')
 
     async def looping(self, ctx, query, player_loop):
         while True:
