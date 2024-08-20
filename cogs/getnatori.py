@@ -13,7 +13,7 @@ import json
 Manage_Channel = 1273134816308625439
 
 # ずんだもん
-zunda = "https://cdn.discordapp.com/emojis/1183011525947047957.png&quality=lossless"
+zunda = 'https://i.imgur.com/6bgRNLR.png'
 
 # Blueskyから情報を持ってくる
 bsky_client = Client("https://api.bsky.app") # botに入れるならbsky_clientとかのほうがわかりやすいかも - おけ！
