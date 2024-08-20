@@ -9,7 +9,7 @@ class E(commands.Cog):
 
     @commands.command(aliases=["E"])
     async def e(self, ctx: Context) -> None:
-        await ctx.reply("e", mention_author=False)
+        await ctx.reply("e")
 
 
 async def setup(bot: commands.Bot):
