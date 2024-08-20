@@ -63,5 +63,13 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
                     await asyncio.sleep(0.1)
         print(fucked)
 
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author == self.bot.user:
+            return
+
+        if 'ストーリー読め' in message.content:
+            await message.channel.send('# ブルーアーカイブのストーリーを読みましょう‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️')
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(fuck(bot))
