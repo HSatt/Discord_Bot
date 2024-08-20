@@ -42,6 +42,7 @@ duration = float(0)
 
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 
+waste = 1275277189230628914
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -103,6 +104,10 @@ class Music(commands.Cog):
             print(f"サムネイルを保存しました: {thumbnail_path}")
         else:
             print("サムネイルが見つかりませんでした。")
+        file = discord.File(thumbnail_path, filename="image.png")
+        wasted_channel = self.bot.get_channel(waste)
+        wasted_message = await wasted_channel.send(file=file)
+        
         global music_embed
         self.music_embed = discord.Embed( # Embedを定義する
                               title = "Now Playing...",# タイトル
@@ -117,8 +122,8 @@ class Music(commands.Cog):
         self.music_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                                 icon_url = zunda)
         file = discord.File(thumbnail_path, filename="temp.jpg")
-        self.music_embed.set_image(url="attachment://image.jpg")
-        await ctx.reply(embed=self.music_embed, file=file)
+        self.music_embed.set_image(url=wasted_message.attachments[0].url)
+        await ctx.reply(embed=self.music_embed)
 
     @commands.command()
     async def call(self,ctx):
