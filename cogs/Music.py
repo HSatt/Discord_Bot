@@ -42,7 +42,10 @@ duration = float(0)
 
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 
-waste = 1275277189230628914
+waste = 1275277189230628914 # ゴミ捨て場
+
+music_queue = []
+
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -104,9 +107,6 @@ class Music(commands.Cog):
             print(f"サムネイルを保存しました: {thumbnail_path}")
         else:
             print("サムネイルが見つかりませんでした。")
-        file = discord.File(thumbnail_path, filename="image.png")
-        wasted_channel = self.bot.get_channel(waste)
-        wasted_message = await wasted_channel.send(file=file)
         
         global music_embed
         self.music_embed = discord.Embed( # Embedを定義する
@@ -122,8 +122,8 @@ class Music(commands.Cog):
         self.music_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                                 icon_url = zunda)
         file = discord.File(thumbnail_path, filename="temp.jpg")
-        self.music_embed.set_image(url=wasted_message.attachments[0].url)
-        await ctx.reply(embed=self.music_embed)
+        self.music_embed.set_image(url='attachment://temp.jpg')
+        await ctx.reply(file=file, embed=self.music_embed)
 
     @commands.command()
     async def call(self,ctx):
@@ -134,25 +134,37 @@ class Music(commands.Cog):
     @commands.command()
     async def play(self, ctx, query, player_loop=False):
         """Plays a file from the local filesystem"""
+        music_queue.append(query)
+        print(music_queue)
         await self.embed(ctx, query=query, player_loop=player_loop)
-        if player_loop == True:
-            global loop
-            loop = True
+        if music_queue == [query]:
+            if player_loop == True:
+                global loop
+                loop = True
             await self.join(ctx)
-            while True:
-                if ctx.voice_client.is_playing():
-                    await asyncio.sleep(0.01)
-                else:
-                    if loop == True:
-                        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-                        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-                    else:
-                        break
-            await self.stop(ctx)
+            await self.looping(ctx, query=query, player_loop=player_loop)
         else:
-            await self.join(ctx)
-            source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-            ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+            None
+
+    async def looping(self, ctx, query, player_loop):
+        while True:
+            if ctx.voice_client.is_playing():
+                await asyncio.sleep(0.01)
+            else:
+                try:
+                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(music_queue[0]))
+                    ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+                    if self.loop == True:
+                        None
+                    elif player_loop == False:
+                        queued_length = await self.length(query=query)
+                        await asyncio.sleep(queued_length - 0.05)
+                        music_queue.remove(music_queue[0])
+                        print(music_queue)
+                    elif self.loop == False:
+                        await self.stop(ctx)
+                except IndexError:
+                    await self.stop(ctx)
 
     @commands.command()
     async def sound(self, ctx, *, query):
@@ -164,15 +176,13 @@ class Music(commands.Cog):
         await ctx.reply(embed=await self.embed(ctx, query=query))
         global prev_channel
 
-    @commands.command()
-    async def length(self, ctx, query):
+    async def length(self, query):
         """get length"""
         probe = ffmpeg.probe(query, cmd='ffprobe')
         stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
         global duration
         duration = float(stream['duration'])
         print(f'This song is {duration}s long.')
-        await ctx.reply(f'This song is {duration}s long.')
         return duration
         
     @commands.command()
