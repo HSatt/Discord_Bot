@@ -19,7 +19,7 @@ initial_extensions = (
     "cogs.youtube",
     "cogs.tweet",
     "cogs.Music",
-    "cogs.E",
+    "cogs.e",
 )
 
 description = '''Hello.
