@@ -151,25 +151,19 @@ class Music(commands.Cog):
         except MutagenError:
             await ctx.reply(f'The pass you entered({query}) does not exist.')
 
-    async def looping(self, ctx, query, player_loop, q):
+    @commands.command()
+    async def looping(self, ctx, query, player_loop=True):
+        await self.join(ctx)
+        await self.embed(ctx=ctx, query=query, player_loop=player_loop)
         while True:
             if ctx.voice_client.is_playing():
                 await asyncio.sleep(0.01)
             else:
                 try:
-                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(music_queue[0]))
+                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
                     ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-                    if self.loop == True:
-                        None
-                    elif player_loop == False:
-                        queued_length = await self.length(query=query)
-                        await asyncio.sleep(queued_length - 0.05)
-                        music_queue.remove(music_queue[0])
-                        print(music_queue)
-                    elif self.loop == False:
-                        await self.stop(ctx)
-                except IndexError:
-                    await self.stop(ctx)
+                except MutagenError:
+                    ctx.reply('idiot')
 
     @commands.command()
     async def add_queue(self, ctx, query, q=q):
