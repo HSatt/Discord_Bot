@@ -21,7 +21,7 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
     # fuckコマンドの定義
     @commands.command(
         name="fuck", # コマンドの名前。設定しない場合は関数名
-        aliases=["hi", "hey"] # ?hiでも ?heyでも反応するようになる
+        aliases=["hi", "hey", "ping"] # ?hiでも ?heyでも反応するようになる
     )
     async def fuck(self, ctx):
         await ctx.reply(f'Fuck Off {ctx.author.mention}')

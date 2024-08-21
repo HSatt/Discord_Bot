@@ -190,7 +190,6 @@ class Music(commands.Cog):
                 try:
                     query = await q.get()
                     print(query)
-                    await self.join(ctx)
                     source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
                     ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
                 except MutagenError:
@@ -277,7 +276,9 @@ class Music(commands.Cog):
     @add_queue.before_invoke
     async def ready_up(self, ctx) -> None: # selfめっちゃ大事！！！！！！！！ 
         await self.join(ctx)
-        asyncio.create_task(self.player(ctx=ctx, q=q))
-
+    
+    @commands.Cog.listener()
+    async def on_ready(self):
+        asyncio.create_task(self.player(q=q))
 async def setup(bot: commands.Bot):
     await bot.add_cog(Music(bot))
