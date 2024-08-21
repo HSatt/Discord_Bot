@@ -46,6 +46,8 @@ waste = 1275277189230628914 # ゴミ捨て場
 
 music_queue = []
 
+q = asyncio.Queue()
+
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -149,7 +151,7 @@ class Music(commands.Cog):
         except MutagenError:
             await ctx.reply(f'The pass you entered({query}) does not exist.')
 
-    async def looping(self, ctx, query, player_loop):
+    async def looping(self, ctx, query, player_loop, q):
         while True:
             if ctx.voice_client.is_playing():
                 await asyncio.sleep(0.01)
@@ -168,6 +170,36 @@ class Music(commands.Cog):
                         await self.stop(ctx)
                 except IndexError:
                     await self.stop(ctx)
+
+    @commands.command()
+    async def add_queue(self, ctx, q, query):
+        await q.put(query)
+        print(f'Added {query} to queue!!')
+        await self.embed(ctx, query=query)
+        await ctx.reply(f'Added {query} to queue fr')
+        await ctx.reply(embed=music_embed)
+
+    async def player(self, ctx, q):
+        while True:
+            if q.empty():
+                if ctx.voice_client.is_playing():
+                    await asyncio.sleep(0.01)
+                else:
+                    self.stop(ctx)
+            if not q.empty() and not ctx.voice_client.is_playing():
+                try:
+                    query = q.get()
+                    await self.embed(ctx, query=query)
+                    print(query)
+                    await self.join(ctx)
+                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
+                    ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
+                    queued_length = await self.length(query=query)
+                    await asyncio.sleep(queued_length - 0.05)
+                except MutagenError:
+                    print(f'The pass you entered({query}) does not exist.')
+            else:
+                print('i dont even know whats happening man')
 
     @commands.command()
     async def sound(self, ctx, *, query):
@@ -229,6 +261,7 @@ class Music(commands.Cog):
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
         await ctx.reply('Player done!')
+        await ctx.voice_client.stop()
         await ctx.voice_client.disconnect()
         global prev_channel
         prev_channel = '0'
@@ -245,6 +278,10 @@ class Music(commands.Cog):
                 raise commands.CommandError("Author not connected to a voice channel.")
         elif ctx.voice_client.is_playing():
             ctx.voice_client.stop()
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None: # selfめっちゃ大事！！！！！！！！ 
+        asyncio.create_task(self.player(q=q))
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Music(bot))
