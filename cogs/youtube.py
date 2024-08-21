@@ -71,9 +71,9 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         name="convert", # コマンドの名前。設定しない場合は関数名
         aliases=["con"]
     )
-    async def convert(self, ctx, url: str):
+    async def convert(self, ctx, handle: str):
         try:
-            resp = requests.get(url)
+            resp = requests.get(f'https://www.youtube.com/@{handle}')
             soup = BeautifulSoup(resp.text, features="lxml")
             link = soup.select_one('link[rel="canonical"]')
             if link is None:
