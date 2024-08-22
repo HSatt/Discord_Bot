@@ -123,9 +123,12 @@ class Music(commands.Cog):
         self.music_embed.set_thumbnail(url = "attachment://image.jpg") # サムネイルとして小さい画像を設定できる
         self.music_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                                 icon_url = zunda)
-        file = discord.File(thumbnail_path, filename="temp.jpg")
-        self.music_embed.set_image(url='attachment://temp.jpg')
-        await ctx.reply(file=file, embed=self.music_embed)
+        if thumbnail_path:
+            file = discord.File(thumbnail_path, filename="temp.jpg")
+            self.music_embed.set_image(url='attachment://temp.jpg')
+            await ctx.reply(file=file, embed=self.music_embed)
+        else:
+            await ctx.reply(embed=self.music_embed)
 
     @commands.command()
     async def call(self,ctx):
