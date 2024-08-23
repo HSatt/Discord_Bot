@@ -58,15 +58,17 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                 latest_tweet = {}
                 temp_latest_tweet = await self.get_latest_tweet(handshake)
                 latest_tweet[screen_name] = temp_latest_tweet.created_at_datetime.timestamp()
-                if before_tweet[screen_name] < latest_tweet[screen_name]:
-                    latest_tweet_list = await self.get_latest_tweet(handshake)
-                    await self.callback(latest_tweet_list)
+                for tweets in await client.get_user_tweets(handshake, 'Tweets'):
+                    if before_tweet[screen_name] < tweets.created_at_datetime.timestamp():
+                        await self.callback(tweets)
+                    else:
+                        break
                 before_tweet[screen_name] = latest_tweet[screen_name]
                 await self.save_before_tweet()
             await asyncio.sleep(CHECK_INTERVAL)
 
     async def callback(self, tweet: Tweet) -> None:
-        print(f'\033[1m>>>>> New tweet posted from @{screen_name}({handshake}) <<<<<:\033[0m')
+        print(f'\033[1m>>>>> New tweet posted from @{screen_name}({handshake}) <<<<<\033[0m')
         channel = self.bot.get_channel(Manage_Channel)
         await channel.send(f'New tweet posted from {screen_name}({handshake}): https://fxtwitter.com/{handshake}/status/{tweet.id}')
 
