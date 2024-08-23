@@ -76,13 +76,12 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
         l_in = [s for s in voices if query in s]
         result = ''
         prev_result = l_in[0].split('/')[0]
-        print(prev_result)
         result += f'{l_in[0].split('/')[0]}\n'
         for directory in l_in:
             if directory.split('/')[0] != prev_result:
                 result += f'{directory.split('/')[0]}\n'
                 prev_result = directory.split('/')[0]
-            result += f'└{directory.split('/')[1]}\n'
+            result += f'**└**{directory.split('/')[1]}\n'
         self.natori_embed = discord.Embed( # Embedを定義する
                               title = f"""You searched for "{query}"...""",# タイトル
                               color = 0x1084fd, # フレーム色指定
@@ -93,6 +92,7 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
                         url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
                         icon_url = zunda # Botのアイコンを設定してみる
                         )
+        self.natori_embed.set_thumbnail(url='https://yt3.googleusercontent.com/Qj-lyidMW6xtEdnv6rDYscGE1kO6K06-i4v8Eiij96YOTo_WdBboLVlEKeE3749ywpyqTec2=s160-c-k-c0x00ffffff-no-rj')
         self.natori_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                             icon_url = zunda)
         try:
