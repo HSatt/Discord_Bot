@@ -110,7 +110,6 @@ class Music(commands.Cog):
         else:
             print("サムネイルが見つかりませんでした。")
         
-        global music_embed
         self.music_embed = discord.Embed( # Embedを定義する
                               title = "Now Playing...",# タイトル
                               color = 0x191919, # フレーム色指定
