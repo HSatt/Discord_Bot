@@ -97,6 +97,9 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
 
         if 'ストーリー読め' in message.content:
             await message.channel.send('# ブルーアーカイブのストーリーを読みましょう‼️‼️‼️‼️‼️‼️‼️‼️‼️‼️')
+        
+        if '面白くない' in message.content:
+            await message.channel.send('そうだよ')
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(fuck(bot))
