@@ -20,6 +20,7 @@ initial_extensions = (
     "cogs.tweet",
     "cogs.Music",
     "cogs.e",
+    "cogs.diyembed"
 )
 
 description = '''Hello.
