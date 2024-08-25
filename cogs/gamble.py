@@ -44,20 +44,11 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             bank_info[str(ctx.author.id)] = 100 + self.gain
             return
         finally:
-            self.gamble_embed = discord.Embed( # Embedを定義する
-                              title = "You rolled a dice...",# タイトル
-                              color = 0x1084fd, # フレーム色指定
-                              description = f'''And you've got **{self.gain}** coins!''', # Embedの説明文
-                              )
-            self.gamble_embed.set_author(name = 'Gambling Addiction', # Botのユーザー名
-                         url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
-                         icon_url = zunda # Botのアイコンを設定してみる
-                         )
-            self.gamble_embed.set_thumbnail(url = "https://image.example.com/thumbnail.png") # サムネイルとして小さい画像を設定できる
-            self.gamble_embed.add_field(name = "Now you have...", value = f'🪙 {bank_info[str(ctx.author.id)]} coins!') # フィールドを追加。
-            self.gamble_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
-                                icon_url = zunda)
-            await ctx.reply(embed=self.gamble_embed)
+            embed = self.bot.get_command("embed")
+            await embed(ctx, title="You rolled a dice...", description=f'''And you've got **{self.gain}** coins!''', author_name='Gamble Addiction',
+                        author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail='', image='', 
+                        field1_name='You now have:', field1_value=f'🪙 {bank_info[str(ctx.author.id)]} coins!', 
+                        field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda)
             with open("data/bank_info.json", "w+", encoding="utf-8") as f:
                 json.dump(bank_info, f)
     
