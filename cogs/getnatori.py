@@ -86,7 +86,18 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
         self.getnatori("natorisana.com", num)
         await ctx.send(embed = self.bsky_embed) # embedの送信には、embed={定義したembed名}
 
-    # natoriコマンドの定義
+    # bfollowコマンドの定義
+    @commands.command(
+        name="bfollow", # コマンドの名前。設定しない場合は関数名
+    )
+    async def bfollow(self, ctx, id):
+        try:
+            await self.getnatori(id, 1)
+            await ctx.reply(f'Succesfully followed {id} in Bluesky!')
+        except:
+            await ctx.reply(f'The id you typed is invalid!!!!!!!!!!!')
+
+    # initializeコマンドの定義
     @commands.command(
         name="initialize", # コマンドの名前。設定しない場合は関数名
     )
