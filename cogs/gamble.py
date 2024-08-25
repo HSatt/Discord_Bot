@@ -14,25 +14,20 @@ Manage_Channel = 1273134816308625439
 
 # emojis for slot
 emojis = ['😋', '🤮', '😡', '😔', '🥲', '🐢']
-global gain
-gain = 0
+table = {'😔': 5, '🤮': 15, '😡': 30, '🥲': 45, '😋': 80, '🐢': 1341141758683892.75}
 # zunda mochi
 zunda = 'https://i.imgur.com/6bgRNLR.png'
+global bank_info
+bank_info = {}
+with open("data/bank_info.json", "r", encoding="utf-8") as f:
+# bank_info.jsonを開く(r)
+    bank_info = json.load(f) # dataにファイル(f)をjsonとしてロードしたものを入れる
+print('Successfully loaded previous bank_info record!')
 
 # MAKE IT COGGY
 class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-
-    # when launched
-    @commands.Cog.listener()
-    async def on_ready(self) -> None: # selfめっちゃ大事！！！！！！！！ 
-        global bank_info
-        bank_info = {}
-        with open("data/bank_info.json", "r", encoding="utf-8") as f:
-            # bank_info.jsonを開く(r)
-            bank_info = json.load(f) # dataにファイル(f)をjsonとしてロードしたものを入れる
-            print('Successfully loaded previous bank_info record!')
 
     # gambleコマンドの定義
     @commands.command(
@@ -44,9 +39,9 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         self.gain = random.randrange(-10, 10)
         try:
             print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] {ctx.author.name} has gained {self.gain} coin(s)!')
-            bank_info[str(ctx.author.id)] += gain
+            bank_info[str(ctx.author.id)] += self.gain
         except KeyError:
-            bank_info[str(ctx.author.id)] = 100 + gain
+            bank_info[str(ctx.author.id)] = 100 + self.gain
             return
         finally:
             self.gamble_embed = discord.Embed( # Embedを定義する
@@ -59,7 +54,7 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                          icon_url = zunda # Botのアイコンを設定してみる
                          )
             self.gamble_embed.set_thumbnail(url = "https://image.example.com/thumbnail.png") # サムネイルとして小さい画像を設定できる
-            self.gamble_embed.add_field(name = "Now you have...", value = f'📀 {bank_info[str(ctx.author.id)]} coins!') # フィールドを追加。
+            self.gamble_embed.add_field(name = "Now you have...", value = f'🪙 {bank_info[str(ctx.author.id)]} coins!') # フィールドを追加。
             self.gamble_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                                 icon_url = zunda)
             await ctx.reply(embed=self.gamble_embed)
@@ -99,34 +94,27 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         try:
             if bank_info[str(ctx.author.id)] <= 0:
                 await ctx.reply('bye bye broke boy')
-                None
+            else:
+                result = ''
+                bank_info[str(ctx.author.id)] -= 1
+                for i in range(3):
+                    result += f'**|**{emojis[random.randrange(6)]}'
+                result += '**|**'
+                if result[1] == result[3] == result[5]:
+                    for face, reward in table.items():
+                        if result[1] == face:
+                            bank_info[str(ctx.author.id)] += reward
+                            print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] {ctx.author.name} has gained {reward} coin(s)!')                 
+                            await ctx.reply(f'You gained {reward} coins fr, Now you have {bank_info[str(ctx.author.id)]} coins 🤓')
+                embed = self.bot.get_command("embed")
+                await embed(ctx, title='You used a coin and pulled the lever...', description=result, author_name='Gamble Addiction', author_url='https://satt.carrd.co/',
+                            author_icon=zunda, thumbnail='', image='', field1_name='You now have:', field1_value=f'🪙 {bank_info[str(ctx.author.id)]} coins!', 
+                            field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda)
+                with open("data/bank_info.json", "w+", encoding="utf-8") as f:
+                    json.dump(bank_info, f)
         except KeyError:
             bank_info[str(ctx.author.id)] = 100   
-        result = ''
-        gain = 0
-        bank_info[str(ctx.author.id)] -= 5
-        for i in range(3):
-            result += f'|{emojis[random.randrange(6)]}'
-        result += '|'
-        await ctx.reply(result)
-        if result[1] == result[3] == result[5]:
-            if result[1] == '😔':
-                gain = 5
-            elif result[1] == '🤮':
-                gain = 15
-            elif result[1] == '😡':
-                gain = 30
-            elif result[1] == '🥲':
-                gain = 45
-            elif result[1] == '😋':
-                gain = 80
-            elif result[1] == '🐢':
-                gain = 1341141758683892.75
-            print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] {ctx.author.name} has gained {gain} coin(s)!')
-            bank_info[str(ctx.author.id)] += gain                    
-            await ctx.reply(f'You gained {gain} coins fr, Now you have {bank_info[str(ctx.author.id)]} coins 🤓')
-        with open("data/bank_info.json", "w+", encoding="utf-8") as f:
-            json.dump(bank_info, f)
+        
 
     
 
