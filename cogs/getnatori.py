@@ -18,6 +18,11 @@ zunda = 'https://i.imgur.com/6bgRNLR.png'
 # Blueskyから情報を持ってくる
 bsky_client = Client("https://api.bsky.app") # botに入れるならbsky_clientとかのほうがわかりやすいかも - おけ！
 
+bsky_followed = {}
+with open("data/bsky_followed.json", "r", encoding="utf-8") as f:
+    bsky_followed = json.load(f) # dataにファイル(f)をjsonとしてロードしたものを入れる
+print('Successfully loaded previous bsky_followed record!')
+
 # MAKE IT COGGY
 class getnatori(commands.Cog): # ファイル名と同じにすると良い
     def __init__(self, bot: commands.Bot) -> None:
@@ -35,42 +40,42 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
     # 画像チェッㇰ
     image_red = False
     # 中身
-    def getnatori(self, num: int):
+    def getnatori(self, id, num: int):
         num -= 1
-        target_uri = bsky_client.get_author_feed("natorisana.com").feed[num].post.uri
+        target_uri = bsky_client.get_author_feed(id).feed[num].post.uri
         useless = target_uri.split('/')
         global image_red
         global bsky_embed
         global bsky_image
         try:
-            self.bsky_image = bsky_client.get_author_feed("natorisana.com").feed[num].post.embed.images[0].fullsize
+            self.bsky_image = bsky_client.get_author_feed(id).feed[num].post.embed.images[0].fullsize
             self.image_red = False
         except AttributeError:
             if self.image_red == True:
                 pass
             else:
                 print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] No Image Detected, Replaced with Placeholder.')
-                self.bsky_image = zunda
+                self.bsky_image = ''
                 self.image_red = True
             return
         finally:
             self.bsky_embed = discord.Embed( # Embedを定義する
-                              title = "Latest Post From Sana Natori",# タイトル
+                              title = f"Latest Post {id}",# タイトル
                               color = 0x1084fd, # フレーム色指定
-                              description = bsky_client.get_author_feed("natorisana.com").feed[num].post.record.text, # Embedの説明文
+                              description = bsky_client.get_author_feed(id).feed[num].post.record.text, # Embedの説明文
                               url = f'https://bsky.app/profile/natorisana.com/post/{useless[-1]}' # これを設定すると、タイトルが指定URLへのリンクになる
                               )
-            self.bsky_embed.set_author(name = '名取さなのBlueskyストーカーBot', # Botのユーザー名
+            self.bsky_embed.set_author(name = 'BlueskyストーカーBot', # Botのユーザー名
                          url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
-                         icon_url = bsky_client.get_author_feed("natorisana.com").feed[num].post.author.avatar # Botのアイコンを設定してみる
+                         icon_url = bsky_client.get_author_feed(id).feed[num].post.author.avatar # Botのアイコンを設定してみる
                          )
             self.bsky_embed.set_thumbnail(url = "https://image.example.com/thumbnail.png") # サムネイルとして小さい画像を設定できる
             self.bsky_embed.set_image(url = self.bsky_image) # 大きな画像タイルを設定できる
-            self.bsky_embed.add_field(name = "Like ❤", value = bsky_client.get_author_feed("natorisana.com").feed[num].post.like_count) # フィールドを追加。
-            self.bsky_embed.add_field(name = "Repost ♻️", value = bsky_client.get_author_feed("natorisana.com").feed[num].post.repost_count)
+            self.bsky_embed.add_field(name = "Like ❤", value = bsky_client.get_author_feed(id).feed[num].post.like_count) # フィールドを追加。
+            self.bsky_embed.add_field(name = "Repost ♻️", value = bsky_client.get_author_feed(id).feed[num].post.repost_count)
             self.bsky_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
                                 icon_url = zunda)
-            return bsky_client.get_author_feed("natorisana.com").feed[1].post.record.text
+            return bsky_client.get_author_feed(id).feed[0].post.record.text
 
 
     # natoriコマンドの定義
@@ -78,30 +83,38 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
         name="natori", # コマンドの名前。設定しない場合は関数名
     )
     async def natori(self, ctx, num: int):
-        self.getnatori(num)
+        self.getnatori("natorisana.com", num)
         await ctx.send(embed = self.bsky_embed) # embedの送信には、embed={定義したembed名}
+
+    # natoriコマンドの定義
+    @commands.command(
+        name="initialize", # コマンドの名前。設定しない場合は関数名
+    )
+    async def initialize(self, ctx):
+        await self.InfStalk()
+        await ctx.send('initialized infstalk') # embedの送信には、embed={定義したembed名}
 
     # InfStalk
     async def InfStalk(self):
-        self.prev_post = 'None'
-        with open("data/prev_post.json", "r", encoding="utf-8") as f:
-            self.prev_post = json.load(f) # dataにファイル(f)をjsonとしてロードしたものを入れる
         self.dupe_red = False
         global bsky_embed
         channel = self.bot.get_channel(Manage_Channel)
         while True:
-            self.getnatori(1)
-            if self.prev_post == bsky_client.get_author_feed("natorisana.com").feed[1].post.record.text:
-                if self.dupe_red == True:
-                    pass
+            for id, prev_post in bsky_followed.items():
+                self.getnatori(id, 1)
+                if prev_post == bsky_client.get_author_feed(id).feed[0].post.record.text:
+                    if self.dupe_red == True:
+                        continue
+                    else:
+                        print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Same Post Detected, None will be sent.')
+                        self.dupe_red = True
                 else:
-                    print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Same Post Detected, None will be sent.')
-                    self.dupe_red = True
-            else:
-                print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
-                await channel.send(embed=self.bsky_embed)
-                self.prev_post = bsky_client.get_author_feed("natorisana.com").feed[1].post.record.text  # コルーチンを実行する
-                self.dupe_red = False
+                    print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
+                    await channel.send(embed=self.bsky_embed)
+                    bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text  # コルーチンを実行する
+                    with open("data/bsky_followed.json", "w+", encoding="utf-8") as f:
+                        json.dump(bsky_followed, f)
+                    self.dupe_red = False
             await asyncio.sleep(5)  # これを使うといい感じに眠れるらしい...🫠
     
     @commands.Cog.listener()
@@ -109,9 +122,7 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
         print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] We have logged in as {self.bot.user}')
         channel = self.bot.get_channel(Manage_Channel)
         await channel.send(f'The Bot is up! @ {datetime.datetime.now().strftime('%H:%M:%S')}')
-        with open("data/prev_post.json", "w+", encoding="utf-8") as f:
-            json.dump(self.getnatori(1), f)
-        # 名取のBlueSkyを10秒おきに読み込む
+        # BlueSkyを10秒おきに読み込む
         await self.InfStalk()
 
 async def setup(bot: commands.Bot):
