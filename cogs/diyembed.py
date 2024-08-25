@@ -10,12 +10,12 @@ class diyembed(commands.Cog):
     @commands.command(
         name="embed", # コマンドの名前。設定しない場合は関数名
     )
-    async def embed(self, ctx, title='', description='', title_url='', author_name='', author_url='',
+    async def embed(self, ctx, title='', color=0x191919, description='', title_url='', author_name='', author_url='',
                     author_icon='', thumbnail='', image='', field1_name='', field1_value='', field2_name='', field2_value='',
                     footer_text="Pasted by Satt", footer_icon=zunda):
         self.embed = discord.Embed( # Embedを定義する
                               title = title, # タイトル
-                              color = 0x191919, # フレーム色指定
+                              color = color, # フレーム色指定
                               description = description, # Embedの説明文
                               url = title_url # これを設定すると、タイトルが指定URLへのリンクになる
                               )
