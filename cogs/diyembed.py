@@ -14,7 +14,7 @@ class diyembed(commands.Cog):
                     author_icon='', thumbnail='', image='', field1_name='', field1_value='', field2_name='', field2_value='',
                     footer_text="Pasted by Satt", footer_icon=zunda):
         self.embed = discord.Embed( # Embedを定義する
-                              title = title,# タイトル
+                              title = title, # タイトル
                               color = 0x191919, # フレーム色指定
                               description = description, # Embedの説明文
                               url = title_url # これを設定すると、タイトルが指定URLへのリンクになる
