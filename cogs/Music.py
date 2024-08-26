@@ -12,6 +12,7 @@ import math
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from mutagen import MutagenError
+import os
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -47,6 +48,18 @@ waste = 1275277189230628914 # ゴミ捨て場
 music_queue = []
 
 q = asyncio.Queue()
+
+path = "./data/sounds/"
+dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
+voices = []
+
+for dir in dirs:
+    if dir == "venv":
+        continue
+    files = os.listdir(path + "/" + dir)
+    for file in files:
+        file_path = dir + "/" + file
+        voices.append(file_path)
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -88,12 +101,14 @@ class Music(commands.Cog):
 
     def get_mp3_thumbnail(self, file_path):
         audio = MP3(file_path, ID3=ID3)
-        for tag in audio.tags.values():
-            if isinstance(tag, APIC):
-                with open("data/thumbnail.jpg", "wb") as img:
-                    img.write(tag.data)
-                return "data/thumbnail.jpg"
-        return None
+        try:
+            for tag in audio.tags.values():
+                if isinstance(tag, APIC):
+                    with open("data/thumbnail.jpg", "wb") as img:
+                        img.write(tag.data)
+                    return "data/thumbnail.jpg"
+        except AttributeError:
+            return None
 
     async def embed(self, ctx, query, player_loop=False):
         """Makes embed for reply"""
@@ -136,7 +151,7 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, query, player_loop=False):
+    async def play(self, ctx, player_loop=False, *, query):
         """Plays a file from the local filesystem"""
         try:
             await self.embed(ctx, query=query, player_loop=player_loop)
@@ -193,13 +208,33 @@ class Music(commands.Cog):
 
     @commands.command()
     async def sound(self, ctx, query):
-        query = f'data/sounds/{query}'
+        query = f'data/sounds/soundboard/{query}'
         await self.join(ctx)
         print(f'Playing {query}')
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.stop(ctx)))
         await ctx.reply(embed=await self.embed(ctx, query=query))
         global prev_channel
+
+    @commands.command()
+    async def search(self, ctx, query=''):
+        l_in = [s for s in voices if query in s]
+        result = ''
+        prev_result = l_in[0].split('/')[0]
+        result += f'{l_in[0].split('/')[0]}\n'
+        for directory in l_in:
+            if directory.split('/')[0] != prev_result:
+                result += f'{directory.split('/')[0]}\n'
+                prev_result = directory.split('/')[0]
+            result += f'**└**{directory.split('/')[1]}\n'
+        try:
+            embed = self.bot.get_command("embed")
+            await embed(ctx, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
+                        author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
+                        footer_text="Pasted by Satt", footer_icon=zunda)
+        except discord.HTTPException:
+            await ctx.reply("うわーん！リストが長すぎます！")
+            print(l_in)
 
     async def length(self, query):
         """get length"""
