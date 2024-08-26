@@ -8,7 +8,7 @@ import asyncio
 from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
-
+from atproto_client.exceptions import BadRequestError
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 
@@ -92,18 +92,20 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
     )
     async def bfollow(self, ctx, id):
         try:
-            await self.getnatori(id, 1)
-            await ctx.reply(f'Succesfully followed {id} in Bluesky!')
-        except:
-            await ctx.reply(f'The id you typed is invalid!!!!!!!!!!!')
+            bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text
+            await ctx.reply(f'Succesfully followed {id} in Bluesky!\nRecent post:{bsky_followed[id]}')
+            print(f'Succesfully followed {id} in Bluesky!\nRecent post:{bsky_followed[id]}')
+        except BadRequestError as e:
+            await ctx.reply(f'The id you typed is invalid!!!!!!!!!!!: {e}')
+            return
 
     # initializeコマンドの定義
     @commands.command(
         name="initialize", # コマンドの名前。設定しない場合は関数名
     )
     async def initialize(self, ctx):
+        await ctx.send('initialized infstalk')
         await self.InfStalk()
-        await ctx.send('initialized infstalk') # embedの送信には、embed={定義したembed名}
 
     # InfStalk
     async def InfStalk(self):
