@@ -4,9 +4,7 @@ from discord.ext.commands import Context
 import os
 import random
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix="button ", intents=intents)
-path = "./data/sounds/sana"
+path = "./data/sana"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
 voices = []
 
@@ -22,7 +20,7 @@ for dir in dirs:
         voices.append(file_path)
 
 # MAKE IT COGGY
-class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
+class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -72,7 +70,7 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
         self.natoriplayloop(ctx)
 
     @commands.command()
-    async def search(self, ctx, query):
+    async def nsearch(self, ctx, query):
         l_in = [s for s in voices if query in s]
         result = ''
         prev_result = l_in[0].split('/')[0]
@@ -107,4 +105,4 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
         await ctx.reply("pong")
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(fuck(bot))
+    await bot.add_cog(natori_button(bot))
