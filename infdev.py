@@ -20,7 +20,7 @@ initial_extensions = (
     "cogs.tweet",
     "cogs.Music",
     "cogs.e",
-    "cogs.diyembed"
+    "cogs.diyembed",
     "cogs.hypixel"
 )
 
