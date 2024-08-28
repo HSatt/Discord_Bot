@@ -85,6 +85,47 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
+
+    # zombies command
+    @commands.command(
+            name="zombies",
+            aliases=["zom", "zombie"]
+            )
+    async def sheepwars(self, ctx, query):
+        hypixel_data = await self.get_uuid_data(ctx, query)
+        try:
+            stats = hypixel_data["player"]["stats"]["Arcade"]
+        except KeyError:
+            await ctx.reply('fuck you idiot')
+        embed = self.bot.get_command("embed")
+        zom_stats = {"""\- D/W Ratio: """: "dwratio",
+                     "\n┗Wins: ": "wins_zombies", "\nᅠ┗Wins in DeadEnd: ": "wins_zombies_deadend", "\nᅠᅠ┣Wins in DE Normal: ": "wins_zombies_deadend_normal",
+                     "\nᅠᅠ┣Wins in DE Hard: ": "wins_zombies_deadend_hard", "\nᅠᅠ┗Wins in DE RIP: ": "wins_zombies_deadend_rip",
+                     "\nᅠ┗Wins in BadBlood: ": "wins_zombies_badblood", "\nᅠᅠ┣Wins in BB Normal: ": "wins_zombies_badblood_normal",
+                     "\nᅠᅠ┣Wins in BB Hard: ": "wins_zombies_badblood_hard", "\nᅠᅠ┗Wins in BB RIP: ": "wins_zombies_badblood_rip",
+                     "\nᅠ┗Wins in Alien Arcadium: ": "wins_zombies_alienarcadium", "\nᅠᅠ┣Wins in AA Normal: ": "wins_zombies_alienarcadium_normal", 
+                     "\nᅠᅠ┣Wins in AA Hard: ": "wins_zombies_alienarcadium_hard", "\nᅠᅠ┗Wins in AA RIP: ": "wins_zombies_alienarcadium_rip",
+                     "\nᅠ┗Wins in Prison: ": "wins_zombies_prison", "\nᅠᅠ┣Wins in Normal: ": "wins_zombies_prison_normal", 
+                     "\nᅠᅠ┣Wins in Hard: ": "wins_zombies_prison_hard", "\nᅠᅠ┗Wins in RIP: ": "wins_zombies_prison_rip",
+                     "\n┗Deaths: ": "deaths_zombies"
+                     }
+        desc = ''
+        for key, value in zom_stats.items():
+            desc += f"**{key}**"
+            try:
+                if value == "dwratio":
+                    desc += str(round(stats["deaths_zombies"] / stats["wins_zombies"], 3))
+                elif value == "kdratio":
+                    desc += str(round(stats["kills"] / stats["deaths"], 3))
+                else:
+                    desc += str(stats[value])
+            except KeyError:
+                desc += ">> 0 <<"
+        await ctx.reply(embed=await embed(ctx, title=f"{query}'s stats in Zombies 🧟‍♀️⚔️",
+                                          description=f"{desc}",
+                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
+                                          footer_text="Pasted by Satt", footer_icon=zunda))
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
         
 async def setup(bot: commands.Bot):
     await bot.add_cog(hypixel(bot))
