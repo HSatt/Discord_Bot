@@ -20,6 +20,20 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    # convert username to uuid, and get data from hypixel API
+    async def get_uuid_data(self, ctx, query):
+        print(f"Grabbing {query}'s data from Hypixel API...")
+        # mojang API
+        mojang_data = getInfo(f'https://api.mojang.com/users/profiles/minecraft/{query}')
+        uuid = mojang_data["id"]
+
+        # hypixel API
+        hypixel_url = f"https://api.hypixel.net/player?key={api_key}&uuid={uuid}"
+        hypixel_data = getInfo(hypixel_url)
+        with open(f"data/hypixel/{query}.json", "w+", encoding="utf-8") as f:
+            json.dump(hypixel_data, f)
+        return hypixel_data
+    
     # uuid command
     @commands.command()
     async def uuid(self, ctx, query):
@@ -41,22 +55,36 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             aliases=["shw", "sheep"]
             )
     async def sheepwars(self, ctx, query):
-        # mojang API
-        mojang_data = getInfo(f'https://api.mojang.com/users/profiles/minecraft/{query}')
-        uuid = mojang_data["id"]
-
-        # hypixel API
-        hypixel_url = f"https://api.hypixel.net/player?key={api_key}&uuid={uuid}"
-        hypixel_data = getInfo(hypixel_url)
-        with open(f"data/hypixel/{query}.json", "w+", encoding="utf-8") as f:
-            json.dump(hypixel_data, f)
-        stat = hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["stats"]
+        hypixel_data = await self.get_uuid_data(ctx, query)
+        try:
+            stats = hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["stats"]
+        except KeyError:
+            await ctx.reply('fuck you idiot')
         embed = self.bot.get_command("embed")
-        await ctx.reply(embed=await embed(ctx, title=f"{query}'s stats in Sheep Wars",
-                                          description=f"**Total games played:** {stat["games_played"]}\n**└Wins:** {stat["wins"]}\n**└Losses:** {stat["losses"]}\n **-** W/L Ratio: {round(stat["wins"] / stat["losses"], 3)}",
+        shw_stats = {"**Total Games played: **": "games_played",
+                     "\n\n**-** **W/L Ratio: **": "wlratio", "\n**┗Wins: **": "wins", "\n**┗Losses: **": "losses",
+                     "\n\n**-** **K/D Ratio: **": "kdratio", "\n**┗Total Kills: **": "kills", "\n**ᅠ┣Void Kills: **": "kills_void",
+                     "\n**ᅠ┣Explosion Kills: **": "kills_explosive", "\n**ᅠ┣Bow Kills: **": "kills_bow", "\n**ᅠ┗Melee Kills: **": "kills_melee",
+                     "\n**┗Total Deaths: **": "deaths", "\n**ᅠ┣Void Deaths: **": "deaths_void",
+                     "\n**ᅠ┣Explosion Deaths: **": "deaths_explosive", "\n**ᅠ┣Bow Deaths: **": "deaths_bow", "\n**ᅠ┗Melee Deaths: **": "deaths_melee",
+                     "\n\n**-** **Damage Dealt: **": "damage_dealt", " ❤️\n**-** **Sheep Thrown: **": "sheep_thrown",}
+        desc = ''
+        for key, value in shw_stats.items():
+            desc += key
+            try:
+                if value == "wlratio":
+                    desc += str(round(stats["wins"] / stats["losses"], 3))
+                elif value == "kdratio":
+                    desc += str(round(stats["kills"] / stats["deaths"], 3))
+                else:
+                    desc += str(stats[value])
+            except KeyError:
+                desc += "0"
+        await ctx.reply(embed=await embed(ctx, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
+                                          description=desc,
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
-                                          field1_name='💀 Kills:', field1_value=stat["kills"],
-                                          field2_name='🪦 Deaths:', field2_value=stat["deaths"], footer_text="Pasted by Satt", footer_icon=zunda))
-
+                                          footer_text="Pasted by Satt", footer_icon=zunda))
+        print(f"Done fetching {query}'s data!")
+        
 async def setup(bot: commands.Bot):
     await bot.add_cog(hypixel(bot))
