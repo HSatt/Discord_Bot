@@ -147,7 +147,7 @@ class Music(commands.Cog):
     @commands.command()
     async def call(self,ctx):
         await self.join(ctx)
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio("Data/sounds/カードが必要なら.wav"))
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio("Data/sounds/soundboard/カードが必要なら.wav"))
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
