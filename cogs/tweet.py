@@ -10,7 +10,7 @@ from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from typing import NoReturn
 from twikit import Client, Tweet
-
+from twikit.errors import ServerError
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 
@@ -50,21 +50,24 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         print(f'\033[1m>>>>> {before_tweet} <<<<<\033[0m')
         # 無限ストーカー編
         while True:
-            for key, value in followed.items():
-                screen_name = key
-                handshake = value
-                print(f'loading {screen_name}({handshake})’s tweets...')
-                global latest_tweet
-                latest_tweet = {}
-                temp_latest_tweet = await self.get_latest_tweet(handshake)
-                latest_tweet[screen_name] = temp_latest_tweet.created_at_datetime.timestamp()
-                for tweets in await client.get_user_tweets(handshake, 'Tweets'):
-                    if before_tweet[screen_name] < tweets.created_at_datetime.timestamp():
-                        await self.callback(tweets)
-                    else:
-                        break
-                before_tweet[screen_name] = latest_tweet[screen_name]
-                await self.save_before_tweet()
+            for screen_name, handshake in followed.items():
+                try:
+                    print(f'loading {screen_name}({handshake})’s tweets...')
+                    global latest_tweet
+                    latest_tweet = {}
+                    temp_latest_tweet = await self.get_latest_tweet(handshake)
+                    latest_tweet[screen_name] = temp_latest_tweet.created_at_datetime.timestamp()
+                    for tweets in await client.get_user_tweets(handshake, 'Tweets'):
+                        if before_tweet[screen_name] < tweets.created_at_datetime.timestamp():
+                            await self.callback(tweets)
+                        else:
+                            break
+                    before_tweet[screen_name] = latest_tweet[screen_name]
+                    await self.save_before_tweet()
+                except ServerError:
+                    channel = self.bot.get_channel(Manage_Channel)
+                    await channel.send(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
+                    print(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
             await asyncio.sleep(CHECK_INTERVAL)
 
     async def callback(self, tweet: Tweet) -> None:
