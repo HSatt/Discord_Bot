@@ -31,7 +31,6 @@ class diyembed(commands.Cog):
             self.embed.add_field(name = field2_name, value = field2_value)
             self.embed.set_footer(text = footer_text, # フッターには開発者の情報でも入れてみる
                                 icon_url = footer_icon)
-        await ctx.reply(embed=self.embed)
-        
+        return self.embed
 async def setup(bot: commands.Bot):
     await bot.add_cog(diyembed(bot))
