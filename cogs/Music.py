@@ -229,9 +229,9 @@ class Music(commands.Cog):
             result += f'**└**{directory.split('/')[1]}\n'
         try:
             embed = self.bot.get_command("embed")
-            await embed(ctx, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
+            await ctx.reply(embed=await embed(ctx, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
-                        footer_text="Pasted by Satt", footer_icon=zunda)
+                        footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
             await ctx.reply("うわーん！リストが長すぎます！")
             print(l_in)
@@ -308,8 +308,5 @@ class Music(commands.Cog):
     async def ready_up(self, ctx) -> None: # selfめっちゃ大事！！！！！！！！ 
         await self.join(ctx)
     
-    @commands.Cog.listener()
-    async def on_ready(self):
-        asyncio.create_task(self.player(q=q))
 async def setup(bot: commands.Bot):
     await bot.add_cog(Music(bot))

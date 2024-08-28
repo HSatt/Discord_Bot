@@ -45,10 +45,10 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             return
         finally:
             embed = self.bot.get_command("embed")
-            await embed(ctx, title="You rolled a dice...", description=f'''And you've got **{self.gain}** coins!''', author_name='Gamble Addiction',
+            await ctx.reply(embed=await embed(ctx, title="You rolled a dice...", description=f'''And you've got **{self.gain}** coins!''', author_name='Gamble Addiction',
                         author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail='', image='', 
                         field1_name='You now have:', field1_value=f'🪙 {bank_info[str(ctx.author.id)]} coins!', 
-                        field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda)
+                        field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda))
             with open("data/bank_info.json", "w+", encoding="utf-8") as f:
                 json.dump(bank_info, f)
     
@@ -91,16 +91,16 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                 for i in range(3):
                     result += f'**|**{emojis[random.randrange(6)]}'
                 result += '**|**'
-                if result[1] == result[3] == result[5]:
+                if result[5] == result[11] == result[17]:
                     for face, reward in table.items():
-                        if result[1] == face:
+                        if result[5] == face:
                             bank_info[str(ctx.author.id)] += reward
                             print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] {ctx.author.name} has gained {reward} coin(s)!')                 
                             await ctx.reply(f'You gained {reward} coins fr, Now you have {bank_info[str(ctx.author.id)]} coins 🤓')
                 embed = self.bot.get_command("embed")
-                await embed(ctx, title='You used a coin and pulled the lever...', description=result, author_name='Gamble Addiction', author_url='https://satt.carrd.co/',
+                await ctx.reply(embed=await embed(ctx, title='You used a coin and pulled the lever...', description=result, author_name='Gamble Addiction', author_url='https://satt.carrd.co/',
                             author_icon=zunda, thumbnail='', image='', field1_name='You now have:', field1_value=f'🪙 {bank_info[str(ctx.author.id)]} coins!', 
-                            field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda)
+                            field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda))
                 with open("data/bank_info.json", "w+", encoding="utf-8") as f:
                     json.dump(bank_info, f)
         except KeyError:
