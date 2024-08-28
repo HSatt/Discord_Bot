@@ -21,6 +21,7 @@ initial_extensions = (
     "cogs.Music",
     "cogs.e",
     "cogs.diyembed"
+    "cogs.hypixel"
 )
 
 description = '''Hello.
