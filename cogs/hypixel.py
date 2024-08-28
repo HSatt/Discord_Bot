@@ -49,7 +49,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         stat = hypixel_data["player"]["uuid"]
         await ctx.reply(stat)
 
-     # uuid command
+    # sheepwars command
     @commands.command(
             name="sheepwars",
             aliases=["shw", "sheep"]
@@ -81,7 +81,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             except KeyError:
                 desc += "0"
         await ctx.reply(embed=await embed(ctx, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
-                                          description=desc,
+                                          description=f"{desc}\n\n **-** **Default Kit:** {hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["default_kit"].title()}",
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
