@@ -1,12 +1,13 @@
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
 import json
 import requests
 import datetime
+from cogs.diyembed import diyembed
 def getInfo(call):
     r = requests.get(call)
     return r.json()
-
 # hypixel API
 api_key = ''
 with open("data/!important/temp_hypixel_api.json", "r", encoding="utf-8") as f:
@@ -14,6 +15,23 @@ with open("data/!important/temp_hypixel_api.json", "r", encoding="utf-8") as f:
 
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
+
+global zom_page
+zom_page = 0
+
+# buttons
+class MyView(View):
+    def __init__(self):
+        super().__init__()
+
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.primary)
+    async def left_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await hypixel.left(self)
+        await interaction.response.send_message("Left Button clicked!", ephemeral=True)
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.primary)
+    async def right_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await hypixel.right(self)
+        await interaction.response.send_message("Right Button clicked!", ephemeral=True)
 
 # MAKE IT COGGY
 class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
@@ -60,7 +78,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             stats = hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["stats"]
         except KeyError:
             await ctx.reply('fuck you idiot')
-        embed = self.bot.get_command("embed")
+        
         shw_stats = {"**Total Games played: **": "games_played",
                      "\n\n**-** **W/L Ratio: **": "wlratio", "\n**┗Wins: **": "wins", "\n**┗Losses: **": "losses",
                      "\n\n**-** **K/D Ratio: **": "kdratio", "\n**┗Total Kills: **": "kills", "\n**ᅠ┣Void Kills: **": "kills_void",
@@ -80,7 +98,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                     desc += str(stats[value])
             except KeyError:
                 desc += "0"
-        await ctx.reply(embed=await embed(ctx, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
+        await ctx.reply(embed=await diyembed.getembed(self, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
                                           description=f"{desc}\n\n **-** **Default Kit:** {hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["default_kit"].title()}",
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
@@ -91,14 +109,79 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             name="zombies",
             aliases=["zom", "zombie"]
             )
-    async def sheepwars(self, ctx, query):
+    async def zombies(self, ctx, query):
+        global zom_response
+        zom_response = []
+        zom_page = 0
         hypixel_data = await self.get_uuid_data(ctx, query)
         try:
-            stats = hypixel_data["player"]["stats"]["Arcade"]
+            global stats_arcade
+            stats_arcade = hypixel_data["player"]["stats"]["Arcade"]
         except KeyError:
             await ctx.reply('fuck you idiot')
-        embed = self.bot.get_command("embed")
-        zom_stats = {"""\- D/W Ratio: """: "dwratio",
+        view = MyView()
+        
+
+        zom_stats_main = {"""\- D/W Ratio: """: "dwratio",
+                          "\n┗Wins: ": "wins_zombies", "\nᅠ┣Wins in DeadEnd: ": "wins_zombies_deadend", "\nᅠ┣Wins in BadBlood: ": "wins_zombies_badblood",
+                          "\nᅠ┣Wins in Alien Arcadium: ": "wins_zombies_alienarcadium", "\nᅠ┗Wins in Prison: ": "wins_zombies_prison",
+                          "\n┗Deaths: ": "deaths_zombies", "\nᅠ┣Deaths in DeadEnd: ": "deaths_zombies_deadend", "\nᅠ┣Deaths in BadBlood: ": "deaths_zombies_badblood",
+                          "\nᅠ┣Deaths in Alien Arcadium: ": "deaths_zombies_alienarcadium", "\nᅠ┗Deaths in Prison: ": "deaths_zombies_prison",
+                          """\n\- K/D Ratio: """: "kdratio", "\n┗Kills: ": "zombie_kills_zombies",}
+        desc = ''
+        for key, value in zom_stats_main.items():
+            desc += await self.zom_get_data(key, value)
+        zom_response.append(desc)
+
+        zom_stats_wins = {"""\- D/W Ratio: """: "dwratio",
+                     "\n┗Wins: ": "wins_zombies",
+                     "\nᅠ┗Wins in DeadEnd: ": "wins_zombies_deadend", "\nᅠᅠ┣Wins in DE Normal: ": "wins_zombies_deadend_normal",
+                     "\nᅠᅠ┣Wins in DE Hard: ": "wins_zombies_deadend_hard", "\nᅠᅠ┗Wins in DE RIP: ": "wins_zombies_deadend_rip",
+                     "\nᅠ┗Wins in BadBlood: ": "wins_zombies_badblood", "\nᅠᅠ┣Wins in BB Normal: ": "wins_zombies_badblood_normal",
+                     "\nᅠᅠ┣Wins in BB Hard: ": "wins_zombies_badblood_hard", "\nᅠᅠ┗Wins in BB RIP: ": "wins_zombies_badblood_rip",
+                     "\nᅠ┗Wins in Alien Arcadium: ": "wins_zombies_alienarcadium",
+                     "\nᅠ┗Wins in Prison: ": "wins_zombies_prison", "\nᅠᅠ┣Wins in Normal: ": "wins_zombies_prison_normal", 
+                     "\nᅠᅠ┣Wins in Hard: ": "wins_zombies_prison_hard", "\nᅠᅠ┗Wins in RIP: ": "wins_zombies_prison_rip",
+                     "\n┗Deaths: ": "deaths_zombies",
+                     }
+        desc = ''
+        for key, value in zom_stats_wins.items():
+            desc += await self.zom_get_data(key, value)
+        zom_response.append(desc)
+        
+        zom_stats_deaths = {"""\- D/W Ratio: """: "dwratio", 
+                            "\n┗Wins: ": "wins_zombies",
+                            "\n┗Deaths: ": "deaths_zombies",
+                            "\nᅠ┗Deaths in DeadEnd: ": "deaths_zombies_deadend", "\nᅠᅠ┣Deaths in DE Normal: ": "deaths_zombies_deadend_normal",
+                            "\nᅠᅠ┣Deaths in DE Hard: ": "deaths_zombies_deadend_hard", "\nᅠᅠ┗Deaths in DE RIP: ": "deaths_zombies_deadend_rip",
+                            "\nᅠ┗Deaths in BadBlood: ": "deaths_zombies_badblood", "\nᅠᅠ┣Deaths in BB Normal: ": "deaths_zombies_badblood_normal",
+                            "\nᅠᅠ┣Deaths in BB Hard: ": "deaths_zombies_badblood_hard", "\nᅠᅠ┗Deaths in BB RIP: ": "deaths_zombies_badblood_rip",
+                            "\nᅠ┗Deaths in Alien Arcadium: ": "deaths_zombies_alienarcadium",
+                            "\nᅠ┗Deaths in Prison: ": "deaths_zombies_prison", "\nᅠᅠ┣Deaths in Normal: ": "deaths_zombies_prison_normal", 
+                            "\nᅠᅠ┣Deaths in Hard: ": "deaths_zombies_prison_hard", "\nᅠᅠ┗Deaths in RIP: ": "deaths_zombies_prison_rip",
+                            }
+        desc = ''
+        for key, value in zom_stats_deaths.items():
+            desc += await self.zom_get_data(key, value)
+        zom_response.append(desc)
+
+        zom_stats_kills = {"""\- K/D Ratio: """: "kdratio",
+                           "\n┗Deaths: ": "deaths_zombies",
+                          "\n┗Kills: ": "zombie_kills_zombies",
+                          "\nᅠ┗Kills in DeadEnd: ": "zombie_kills_zombies_deadend", "\nᅠᅠ┣Kills in DE Normal: ": "zombie_kills_zombies_deadend_normal",
+                          "\nᅠᅠ┣Kills in DE Hard: ": "zombie_kills_zombies_deadend_hard", "\nᅠᅠ┗Kills in DE RIP: ": "zombie_kills_zombies_deadend_rip",
+                          "\nᅠ┗Kills in BadBlood: ": "zombie_kills_zombies_badblood", "\nᅠᅠ┣Kills in BB Normal: ": "zombie_kills_zombies_badblood_normal",
+                          "\nᅠᅠ┣Kills in BB Hard: ": "zombie_kills_zombies_badblood_hard", "\nᅠᅠ┗Kills in BB RIP: ": "zombie_kills_zombies_badblood_rip",
+                          "\nᅠ┗Kills in Alien Arcadium: ": "zombie_kills_zombies_alienarcadium",
+                          "\nᅠ┗Kills in Prison: ": "zombie_kills_zombies_prison", "\nᅠᅠ┣Kills in Normal: ": "zombie_kills_zombies_prison_normal", 
+                          "\nᅠᅠ┣Kills in Hard: ": "zombie_kills_zombies_prison_hard", "\nᅠᅠ┗Kills in RIP: ": "zombie_kills_zombies_prison_rip",
+                         }
+        desc = ''
+        for key, value in zom_stats_kills.items():
+            desc += await self.zom_get_data(key, value)
+        zom_response.append(desc)
+        
+        zom_stats_all = {"""\- D/W Ratio: """: "dwratio",
                      "\n┗Wins: ": "wins_zombies",
                      "\nᅠ┗Wins in DeadEnd: ": "wins_zombies_deadend", "\nᅠᅠ┣Wins in DE Normal: ": "wins_zombies_deadend_normal",
                      "\nᅠᅠ┣Wins in DE Hard: ": "wins_zombies_deadend_hard", "\nᅠᅠ┗Wins in DE RIP: ": "wins_zombies_deadend_rip",
@@ -126,22 +209,52 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                      "\nᅠᅠ┣Kills in Hard: ": "zombie_kills_zombies_prison_hard", "\nᅠᅠ┗Kills in RIP: ": "zombie_kills_zombies_prison_rip",
                      }
         desc = ''
-        for key, value in zom_stats.items():
-            desc += f"**{key}**"
-            try:
-                if value == "dwratio":
-                    desc += str(round(stats["deaths_zombies"] / stats["wins_zombies"], 3))
-                elif value == "kdratio":
-                    desc += str(round(stats["zombie_kills_zombies"] / stats["deaths_zombies"], 3))
-                else:
-                    desc += str(stats[value])
-            except KeyError:
-                desc += ">> 0 <<"
-        await ctx.reply(embed=await embed(ctx, title=f"{query}'s stats in Zombies 🧟‍♀️⚔️",
-                                          description=f"{desc}",
+        for key, value in zom_stats_all.items():
+            desc += await self.zom_get_data(key, value)
+        zom_response.append(desc)
+        global title
+        title = f"{query}'s stats in Zombies 🧟‍♀️⚔️"
+        global message
+        message = await ctx.reply(embed=await diyembed.getembed(self, title=f"{title} / Page 1",
+                                          description=f"{zom_response[zom_page]}",
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
-                                          footer_text="Pasted by Satt", footer_icon=zunda))
+                                          footer_text="Pasted by Satt", footer_icon=zunda), view=view)
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
-        
+
+    async def zom_get_data(self, key, value):
+        data = ''
+        data += f"**{key}**"
+        try:
+            if value == "dwratio":
+                data += str(round(stats_arcade["deaths_zombies"] / stats_arcade["wins_zombies"], 3))
+            elif value == "kdratio":
+                data += str(round(stats_arcade["zombie_kills_zombies"] / stats_arcade["deaths_zombies"], 3))
+            else:
+                data += f"{stats_arcade[value]:,}"
+        except KeyError:
+            data += ">> 0 <<"
+        return data
+
+    async def left(self):
+        view = MyView()
+        global zom_page
+        zom_page -= 1
+        if zom_page < 0:
+            zom_page = 4
+        await hypixel.editing(self, view=view)
+
+    async def right(self):
+        view = MyView()
+        global zom_page
+        zom_page += 1
+        if zom_page > 4:
+            zom_page = 0
+        await hypixel.editing(self, view=view)
+
+    async def editing(self, view):
+        await message.edit(embed=await diyembed.getembed(self, title=f"{title} / Page {zom_page + 1}",
+                                            description=f"{zom_response[zom_page]}",
+                                            author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
+                                            footer_text="Pasted by Satt", footer_icon=zunda), view=view)
 async def setup(bot: commands.Bot):
     await bot.add_cog(hypixel(bot))
