@@ -79,7 +79,7 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
             if directory.split('/')[0] != prev_result:
                 result += f'{directory.split('/')[0]}\n'
                 prev_result = directory.split('/')[0]
-            result += f'**└**{directory.split('/')[1]}\n'
+            result += f'**┗**{directory.split('/')[1]}\n'
         self.natori_embed = discord.Embed( # Embedを定義する
                               title = f"""You searched for "{query}"...""",# タイトル
                               color = 0x1084fd, # フレーム色指定

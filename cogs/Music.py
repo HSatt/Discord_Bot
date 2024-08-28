@@ -226,7 +226,7 @@ class Music(commands.Cog):
             if directory.split('/')[0] != prev_result:
                 result += f'{directory.split('/')[0]}\n'
                 prev_result = directory.split('/')[0]
-            result += f'**└**{directory.split('/')[1]}\n'
+            result += f'**┗**{directory.split('/')[1]}\n'
         try:
             embed = self.bot.get_command("embed")
             await ctx.reply(embed=await embed(ctx, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
