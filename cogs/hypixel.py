@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import json
 import requests
-
+import datetime
 def getInfo(call):
     r = requests.get(call)
     return r.json()
@@ -22,7 +22,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
 
     # convert username to uuid, and get data from hypixel API
     async def get_uuid_data(self, ctx, query):
-        print(f"Grabbing {query}'s data from Hypixel API...")
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Grabbing {query}'s data from Hypixel API...")
         # mojang API
         mojang_data = getInfo(f'https://api.mojang.com/users/profiles/minecraft/{query}')
         uuid = mojang_data["id"]
@@ -84,7 +84,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                                           description=desc,
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
-        print(f"Done fetching {query}'s data!")
+        print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
         
 async def setup(bot: commands.Bot):
     await bot.add_cog(hypixel(bot))
