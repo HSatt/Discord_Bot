@@ -9,6 +9,7 @@ from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from atproto_client.exceptions import BadRequestError
+from cogs import diyembed
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 

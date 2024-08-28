@@ -13,6 +13,7 @@ from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
 from mutagen import MutagenError
 import os
+from cogs.diyembed import diyembed
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -228,8 +229,8 @@ class Music(commands.Cog):
                 prev_result = directory.split('/')[0]
             result += f'**┗**{directory.split('/')[1]}\n'
         try:
-            embed = self.bot.get_command("embed")
-            await ctx.reply(embed=await embed(ctx, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
+            
+            await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
                         footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:

@@ -8,6 +8,7 @@ import asyncio
 from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
+from cogs.diyembed import diyembed
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 # target list

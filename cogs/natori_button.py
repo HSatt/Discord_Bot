@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 import os
 import random
-
+from cogs import diyembed
 path = "./data/sana"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
 voices = []
