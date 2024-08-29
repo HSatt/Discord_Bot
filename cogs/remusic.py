@@ -135,7 +135,7 @@ class Music(commands.Cog):
         elif query.endswith(".mp3") == True:
             thumbnail_path = self.get_mp3_thumbnail(file_path=query)
         else:
-            pass
+            thumbnail_path = None
         if thumbnail_path:
             print(f"サムネイルを保存しました: {thumbnail_path}")
         else:
@@ -167,36 +167,34 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, player_loop=False, *, query,):
+    async def play(self, ctx, player_loop=False, *, query):
         """Plays a file from the local filesystem"""
         await self.join(ctx)
-        if ctx.voice_client.is_playing():
-            music_queue.append(query)
-            print(music_queue)
-        else:
-            await self.prep_embed(ctx, query=query, player_loop=player_loop)
-            music_queue.append(query)
-            print(music_queue)
-            if music_queue == [query]:
-                if player_loop == True:
-                    global loop
-                    loop = True
-            await self.player(ctx, current=0)
+        await self.prep_embed(ctx, query=query, player_loop=player_loop)
+        music_queue.append(query)
+        print(music_queue)
+        if not ctx.voice_client.is_playing():
+            await self.player(ctx, current=0, loop=player_loop)
 
-    async def player(self, ctx, current):
-        print(current)
-        try:
-            print(current)
-            print(music_queue[current])
+    async def player(self, ctx, current, loop=False):
+        if loop == True:
+            try:
+                print(music_queue[current])
+            except IndexError:
+                current = 0
+                print(music_queue[current])
             source = music_queue[current]
             current += 1
-            print(current)
-        except IndexError:
-                print(current)
-                current = 0
-                source = music_queue[current]
-        ctx.voice_client.play(discord.FFmpegPCMAudio(source), after=lambda e: self.player(ctx, current=current))
-
+        else:
+            try:
+                print(music_queue[0])
+            except IndexError:
+                await ctx.reply('No more songs in queue!')
+                await self.stop(ctx)
+                return
+            source = music_queue.pop(0)
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
+        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.player(ctx, current=current, loop=loop)))
     @commands.command()
     async def getq(self, ctx):
         await ctx.reply(f"{music_queue}")
@@ -204,11 +202,7 @@ class Music(commands.Cog):
     @commands.command()
     async def sound(self, ctx, query):
         query = f'data/sounds/soundboard/{query}'
-        await self.join(ctx)
-        print(f'Playing {query}')
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.stop(ctx)))
-        await self.music_embed(ctx, query=query)
+        await self.play(ctx, query=query)
 
     @commands.command()
     async def search(self, ctx, query=''):
@@ -246,20 +240,6 @@ class Music(commands.Cog):
         loop = False
         await ctx.reply('aight bro its gonna stop as soon as this track ends')
     
-    @commands.command()
-    async def looping(self, ctx, query, player_loop=True):
-        await self.join(ctx)
-        await self.prep_embed(ctx=ctx, query=query, player_loop=player_loop)
-        while True:
-            if ctx.voice_client.is_playing():
-                await asyncio.sleep(0.01)
-            else:
-                try:
-                    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(query))
-                    ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
-                except MutagenError:
-                    ctx.reply('idiot')
-
     @commands.command()
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
