@@ -24,10 +24,10 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    def natoriplayloop(self, ctx: Context) -> None:
+    def natoriloop(self, ctx: Context) -> None:
         voice_path = random.choice(voices)
         ctx.voice_client.play(
-            discord.FFmpegPCMAudio(voice_path), after=lambda e: self.natoriplayloop(ctx)
+            discord.FFmpegPCMAudio(voice_path), after=lambda e: self.natoriloop(ctx)
         )
 
     @commands.command(

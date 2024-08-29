@@ -11,6 +11,7 @@ import json
 from typing import NoReturn
 from twikit import Client, Tweet
 from twikit.errors import ServerError
+from httpx import ReadTimeout
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 
@@ -66,6 +67,9 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                     await self.save_before_tweet()
                 except ServerError:
                     channel = self.bot.get_channel(Manage_Channel)
+                    await channel.send(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
+                    print(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
+                except ReadTimeout:
                     await channel.send(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
                     print(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
             await asyncio.sleep(CHECK_INTERVAL)
