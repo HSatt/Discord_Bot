@@ -7,10 +7,10 @@ import time
 import asyncio
 from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
-from cogs import getnatori, fuck, delete, gamble, youtube, tweet, Music
 import json
 import pretty_help
 from pretty_help import PrettyHelp
+
 initial_extensions = (
     "cogs.getnatori", 
     "cogs.fuck",
