@@ -2,7 +2,7 @@ import asyncio
 
 import discord
 import youtube_dl
-
+import random
 from discord.ext import tasks, commands
 import ffmpeg
 import ffprobe
@@ -209,7 +209,7 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, query, player_loop=False):
+    async def play(self, ctx, query="", player_loop=False):
         """Plays a file from the local filesystem"""
         query = await self.search(ctx, query)
         await self.join(ctx)
@@ -222,7 +222,7 @@ class Music(commands.Cog):
                 await self.player(ctx, current=0, loop=player_loop)
 
     @commands.command()
-    async def cplay(self, ctx, query, player_loop=False):
+    async def cplay(self, ctx, query="", player_loop=False):
         query = await self.csearch(ctx, query)
         print(query)
         await self.join(ctx)
@@ -233,6 +233,12 @@ class Music(commands.Cog):
             print(music_queue)
             if not ctx.voice_client.is_playing():
                 await self.player(ctx, current=0, loop=player_loop)
+
+    @commands.command()
+    async def shuffle(self, ctx):
+        random.shuffle(music_queue)
+        await ctx.reply('Queue shuffled!')
+        await self.getq(ctx)
 
     async def player(self, ctx, current, loop=False):
         if loop == True:
@@ -257,7 +263,17 @@ class Music(commands.Cog):
 
     @commands.command()
     async def getq(self, ctx):
-        await ctx.reply(f"{music_queue}")
+        reciept = ''
+        for raw_item in music_queue:
+            getq_response = ''
+            for thing in raw_item.split('/'):
+                if not thing in cpath:
+                    getq_response += thing + '/'
+            reciept += f'- {getq_response}\n'
+        try:
+            await ctx.reply(embed=await diyembed.getembed(self, title="Queue", color=0x1084fd, description=f"{reciept}",))
+        except discord.HTTPException:
+            await ctx.reply("Queue too long!")
 
     @commands.command()
     async def sound(self, ctx, query):
@@ -265,21 +281,25 @@ class Music(commands.Cog):
         await self.play(ctx, query=query)
 
     async def fetch(self, ctx, query, raw_result):
-        prev_directory = ''
+        removed = []
+        for item in raw_result:
+            print(f"{item}")
+            if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg"):
+                print(f"Thumbnail detected! {item}")
+                removed.append(item)
+        for removeitem in removed:
+            raw_result.remove(removeitem)
         result = ''
         if raw_result == []:
             await ctx.reply('No results found!')
             return raw_result
-        prev_result = raw_result[0].split('/')[0]
         result += f'{raw_result[0].split('/')[0]}\n'
-        prev_directory = f'{raw_result[0].split('/')[0]}'
         for directory in raw_result:
             if not "." in directory.split('/')[1]:
                 count = 1
                 print(directory.split('/'))
                 while True:
                     for test in directory.split('/'):
-                        print(test)
                         if not test in result:
                             result += f'**' + 'ᅠ' * (count) + f'┗**{test}\n'
                             if "." in test:
@@ -312,6 +332,11 @@ class Music(commands.Cog):
     @commands.command()
     async def rawsearch(self, ctx, query=''):
         await ctx.reply(await self.search(ctx, query=query))
+
+    @commands.command()
+    async def crawsearch(self, ctx, query=''):
+        await ctx.reply(await self.csearch(ctx, query=query))
+
 
     async def length(self, query):
         """get length"""
