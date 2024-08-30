@@ -58,7 +58,7 @@ for dir in dirs:
         continue
     files = os.listdir(path + "/" + dir)
     for file in files:
-        file_path = dir + "/" + file
+        file_path = str(dir + "/" + file).lower()
         voices.append(file_path)
 
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -167,14 +167,17 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, player_loop=False, *, query):
+    async def play(self, ctx, query, player_loop=False,):
         """Plays a file from the local filesystem"""
-        await self.join(ctx)
-        await self.prep_embed(ctx, query=query, player_loop=player_loop)
-        music_queue.append(query)
-        print(music_queue)
-        if not ctx.voice_client.is_playing():
-            await self.player(ctx, current=0, loop=player_loop)
+        query = await self.search(ctx, query)
+        for content in query:
+            content = f"data/sounds/{content}"
+            await self.join(ctx)
+            await self.prep_embed(ctx, query=content, player_loop=player_loop)
+            music_queue.append(content)
+            print(music_queue)
+            if not ctx.voice_client.is_playing():
+                await self.player(ctx, current=0, loop=player_loop)
 
     async def player(self, ctx, current, loop=False):
         if loop == True:
@@ -201,16 +204,20 @@ class Music(commands.Cog):
 
     @commands.command()
     async def sound(self, ctx, query):
-        query = f'data/sounds/soundboard/{query}'
+        query = f'/soundboard/{query}'
         await self.play(ctx, query=query)
 
     @commands.command()
     async def search(self, ctx, query=''):
-        l_in = [s for s in voices if query in s]
+        query = query.lower()
+        raw_result = [s for s in voices if query in s]
         result = ''
-        prev_result = l_in[0].split('/')[0]
-        result += f'{l_in[0].split('/')[0]}\n'
-        for directory in l_in:
+        if raw_result == []:
+            await ctx.reply('No results found!')
+            return raw_result
+        prev_result = raw_result[0].split('/')[0]
+        result += f'{raw_result[0].split('/')[0]}\n'
+        for directory in raw_result:
             if directory.split('/')[0] != prev_result:
                 result += f'{directory.split('/')[0]}\n'
                 prev_result = directory.split('/')[0]
@@ -222,7 +229,27 @@ class Music(commands.Cog):
                         footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
             await ctx.reply("うわーん！リストが長すぎます！")
-            print(l_in)
+            print(raw_result)
+        return raw_result
+    
+    @commands.command()
+    async def rawsearch(self, ctx, query=''):
+        await ctx.reply(await self.search(ctx, query=query))
+    
+    @commands.command()
+    async def reload(self, ctx):
+        global voices
+        voices = []
+        for dir in dirs:
+            if dir == "venv":
+                continue
+            files = os.listdir(path + "/" + dir)
+            for file in files:
+                file_path = dir + "/" + file
+                voices.append(file_path)
+        await ctx.reply(f"Reloaded data... {len(voices)} files found.")
+        await self.search(ctx, query='')
+
 
     async def length(self, query):
         """get length"""
