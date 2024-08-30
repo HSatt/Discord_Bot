@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
 from cogs.diyembed import diyembed
+import random
 class MyView(View):
     def __init__(self):
         super().__init__()
@@ -43,5 +44,10 @@ class E(commands.Cog):
     async def right(self):
         view = MyView()
         await message.edit(content="right", embed=None, view=view)
+
+    @commands.command(aliases=["rap, cap"])
+    async def nap(self, ctx: Context) -> None:
+        await ctx.reply(f"今日は**{random.randrange(1, 100)}**分昼寝しましょう！")
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(E(bot))
