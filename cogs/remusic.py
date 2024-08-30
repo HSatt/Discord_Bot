@@ -82,28 +82,25 @@ cvoices = []
 
 def cgetmefiles(file):
     while True:
-        sub_files = os.listdir(cpath + "/" + dir + "/" + file)
-        print(sub_files)
+        sub_files = os.listdir(cpath + "/" + cdir + "/" + file)
         for sub_file in sub_files:
             if not "." in sub_file:
-                print(f"File detected! {sub_file}")
                 cgetmefiles(file=(file + "/" + sub_file))
             else:
-                file_path = str(dir + "/" + file + "/" + sub_file).lower()
+                file_path = str(cdir + "/" + file + "/" + sub_file).lower()
                 cvoices.append(file_path)
         break
 
-for dir in cdirs:
-    if dir == "Music":
+for cdir in cdirs:
+    if cdir == "Music":
         continue
-    files = os.listdir(cpath + "/" + dir)
-    print(files)
+    files = os.listdir(cpath + "/" + cdir)
     for file in files:
         if not "." in file:
             print(f"File detected! {file}")
             cgetmefiles(file)
         else:
-            file_path = str(dir + "/" + file).lower()
+            file_path = str(cdir + "/" + file).lower()
             cvoices.append(file_path)
 
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -268,45 +265,36 @@ class Music(commands.Cog):
         await self.play(ctx, query=query)
 
     async def fetch(self, ctx, query, raw_result):
+        prev_directory = ''
         result = ''
         if raw_result == []:
             await ctx.reply('No results found!')
             return raw_result
         prev_result = raw_result[0].split('/')[0]
         result += f'{raw_result[0].split('/')[0]}\n'
+        prev_directory = f'{raw_result[0].split('/')[0]}'
         for directory in raw_result:
-            print(directory)
-            if directory.split('/')[0] != prev_result:
-                result += f'{directory.split('/')[0]}\n'
-                prev_result = directory.split('/')[0]
             if not "." in directory.split('/')[1]:
                 count = 1
                 print(directory.split('/'))
                 while True:
-                    try:
-                        if not "." in directory.split('/')[count]:
-                            result += f'**' + 'ᅠ' * (count) + f'┗**{directory.split('/')[count]}\n'
-                            count += 1
-                        else:
-                            result += f'**' + 'ᅠ' * (count) + f'┗**{directory.split('/')[count]}\n'
-                            print("found file")
-                            print(result)
-                            break
-                    except IndexError:
-                        result += f'**' + 'ᅠ' * (count - 1) + f'┗**{directory.split('/')[count - 1]}\n'
-                        print("found file")
-                        print(result)
-                        break
+                    for test in directory.split('/'):
+                        print(test)
+                        if not test in result:
+                            result += f'**' + 'ᅠ' * (count) + f'┗**{test}\n'
+                            if "." in test:
+                                break
+                        count += 1
+                    break
             else:
                 result += f'**┗**{directory.split('/')[1]}\n'
         try:
-            
             await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
                         footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
             await ctx.reply("うわーん！リストが長すぎます！")
-            print(raw_result)
+        print(raw_result)
         return raw_result
     
     @commands.command()
