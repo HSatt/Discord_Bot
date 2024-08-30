@@ -1,5 +1,3 @@
-# This example requires the 'message_content' privileged intent to function.
-
 import asyncio
 
 import discord
@@ -49,17 +47,64 @@ waste = 1275277189230628914 # ゴミ捨て場
 
 music_queue = []
 
-path = "./data/sounds/"
+path = "data/sounds"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
 voices = []
+
+def getmefiles(file):
+    while True:
+        sub_files = os.listdir(path + "/" + dir + "/" + file)
+        print(sub_files)
+        for sub_file in sub_files:
+            if not "." in sub_file:
+                print(f"File detected! {sub_file}")
+                getmefiles(file=(file + "/" + sub_file))
+            else:
+                file_path = str(dir + "/" + file + "/" + sub_file).lower()
+                voices.append(file_path)
+        break
 
 for dir in dirs:
     if dir == "venv":
         continue
     files = os.listdir(path + "/" + dir)
     for file in files:
-        file_path = str(dir + "/" + file).lower()
-        voices.append(file_path)
+        if not "." in file:
+            print(f"File detected! {file}")
+            getmefiles(file)
+        else:
+            file_path = str(dir + "/" + file).lower()
+            voices.append(file_path)
+
+cpath = "C://Users/hatos/Music"
+cdirs = [f for f in os.listdir(cpath) if os.path.isdir(cpath + "/" + f)]
+cvoices = []
+
+def cgetmefiles(file):
+    while True:
+        sub_files = os.listdir(cpath + "/" + dir + "/" + file)
+        print(sub_files)
+        for sub_file in sub_files:
+            if not "." in sub_file:
+                print(f"File detected! {sub_file}")
+                cgetmefiles(file=(file + "/" + sub_file))
+            else:
+                file_path = str(dir + "/" + file + "/" + sub_file).lower()
+                cvoices.append(file_path)
+        break
+
+for dir in cdirs:
+    if dir == "Music":
+        continue
+    files = os.listdir(cpath + "/" + dir)
+    print(files)
+    for file in files:
+        if not "." in file:
+            print(f"File detected! {file}")
+            cgetmefiles(file)
+        else:
+            file_path = str(dir + "/" + file).lower()
+            cvoices.append(file_path)
 
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
@@ -167,12 +212,25 @@ class Music(commands.Cog):
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
     @commands.command()
-    async def play(self, ctx, query, player_loop=False,):
+    async def play(self, ctx, query, player_loop=False):
         """Plays a file from the local filesystem"""
         query = await self.search(ctx, query)
+        await self.join(ctx)
         for content in query:
-            content = f"data/sounds/{content}"
-            await self.join(ctx)
+            content = path + "/" + content
+            await self.prep_embed(ctx, query=content, player_loop=player_loop)
+            music_queue.append(content)
+            print(music_queue)
+            if not ctx.voice_client.is_playing():
+                await self.player(ctx, current=0, loop=player_loop)
+
+    @commands.command()
+    async def cplay(self, ctx, query, player_loop=False):
+        query = await self.csearch(ctx, query)
+        print(query)
+        await self.join(ctx)
+        for content in query:
+            content = cpath + "/" + content
             await self.prep_embed(ctx, query=content, player_loop=player_loop)
             music_queue.append(content)
             print(music_queue)
@@ -197,20 +255,19 @@ class Music(commands.Cog):
                 return
             source = music_queue.pop(0)
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
-        ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.player(ctx, current=current, loop=loop)))
+        ctx.voice_client.play(source, 
+                              after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.player(ctx, current=current, loop=loop)))
+
     @commands.command()
     async def getq(self, ctx):
         await ctx.reply(f"{music_queue}")
 
     @commands.command()
     async def sound(self, ctx, query):
-        query = f'/soundboard/{query}'
+        query = f'soundboard/{query}'
         await self.play(ctx, query=query)
 
-    @commands.command()
-    async def search(self, ctx, query=''):
-        query = query.lower()
-        raw_result = [s for s in voices if query in s]
+    async def fetch(self, ctx, query, raw_result):
         result = ''
         if raw_result == []:
             await ctx.reply('No results found!')
@@ -218,10 +275,30 @@ class Music(commands.Cog):
         prev_result = raw_result[0].split('/')[0]
         result += f'{raw_result[0].split('/')[0]}\n'
         for directory in raw_result:
+            print(directory)
             if directory.split('/')[0] != prev_result:
                 result += f'{directory.split('/')[0]}\n'
                 prev_result = directory.split('/')[0]
-            result += f'**┗**{directory.split('/')[1]}\n'
+            if not "." in directory.split('/')[1]:
+                count = 1
+                print(directory.split('/'))
+                while True:
+                    try:
+                        if not "." in directory.split('/')[count]:
+                            result += f'**' + 'ᅠ' * (count) + f'┗**{directory.split('/')[count]}\n'
+                            count += 1
+                        else:
+                            result += f'**' + 'ᅠ' * (count) + f'┗**{directory.split('/')[count]}\n'
+                            print("found file")
+                            print(result)
+                            break
+                    except IndexError:
+                        result += f'**' + 'ᅠ' * (count - 1) + f'┗**{directory.split('/')[count - 1]}\n'
+                        print("found file")
+                        print(result)
+                        break
+            else:
+                result += f'**┗**{directory.split('/')[1]}\n'
         try:
             
             await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
@@ -233,23 +310,20 @@ class Music(commands.Cog):
         return raw_result
     
     @commands.command()
-    async def rawsearch(self, ctx, query=''):
-        await ctx.reply(await self.search(ctx, query=query))
+    async def search(self, ctx, query=''):
+        query = query.lower()
+        raw_result = [s for s in voices if query in s]
+        return await self.fetch(ctx, query=query, raw_result=raw_result)
     
     @commands.command()
-    async def reload(self, ctx):
-        global voices
-        voices = []
-        for dir in dirs:
-            if dir == "venv":
-                continue
-            files = os.listdir(path + "/" + dir)
-            for file in files:
-                file_path = dir + "/" + file
-                voices.append(file_path)
-        await ctx.reply(f"Reloaded data... {len(voices)} files found.")
-        await self.search(ctx, query='')
-
+    async def csearch(self, ctx, query=''):
+        query = query.lower()
+        raw_result = [s for s in cvoices if query in s]
+        return await self.fetch(ctx, query=query, raw_result=raw_result)
+    
+    @commands.command()
+    async def rawsearch(self, ctx, query=''):
+        await ctx.reply(await self.search(ctx, query=query))
 
     async def length(self, query):
         """get length"""
