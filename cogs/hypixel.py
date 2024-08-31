@@ -5,6 +5,7 @@ import json
 import requests
 import datetime
 from cogs.diyembed import diyembed
+import base64
 def getInfo(call):
     r = requests.get(call)
     return r.json()
@@ -52,6 +53,38 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             json.dump(hypixel_data, f)
         return hypixel_data
     
+    @commands.command()
+    async def skin(self, ctx, query):
+        # Mojang APIからプレイヤーのプロフィールを取得
+        mojang_data = getInfo(f'https://api.mojang.com/users/profiles/minecraft/{query}')
+        uuid = mojang_data["id"]
+        profile_url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
+        response = requests.get(profile_url)
+        
+        if response.status_code != 200:
+            raise Exception("Failed to get profile information")
+        
+        profile_data = response.json()
+        
+        # プロフィール情報からスキンのURLを取得
+        properties = profile_data.get("properties", [])
+        for prop in properties:
+            if prop["name"] == "textures":
+                texture_data = base64.b64decode(prop["value"]).decode("utf-8")
+                texture_json = json.loads(texture_data)
+                skin_url = texture_json["textures"]["SKIN"]["url"]
+                await ctx.reply(skin_url)
+                return skin_url
+        raise Exception("Skin URL not found")
+    
+    async def get_head_url(self, query):
+        # mojang API
+        mojang_data = getInfo(f'https://api.mojang.com/users/profiles/minecraft/{query}')
+        uuid = mojang_data["id"]
+        # ヘッドの画像URLを生成
+        head_url = f"https://crafatar.com/avatars/{uuid}"
+        return head_url
+
     # uuid command
     @commands.command()
     async def uuid(self, ctx, query):
@@ -74,6 +107,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             )
     async def sheepwars(self, ctx, query):
         hypixel_data = await self.get_uuid_data(ctx, query)
+        skin_url = await self.get_head_url(query)
         try:
             stats = hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["stats"]
         except KeyError:
@@ -100,7 +134,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                 desc += "0"
         await ctx.reply(embed=await diyembed.getembed(self, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
                                           description=f"{desc}\n\n **-** **Default Kit:** {hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["default_kit"].title()}",
-                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
+                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail=skin_url, image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
 
@@ -114,6 +148,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         zom_response = []
         zom_page = 0
         hypixel_data = await self.get_uuid_data(ctx, query)
+        skin_url = await self.get_head_url(query)
         try:
             global stats_arcade
             stats_arcade = hypixel_data["player"]["stats"]["Arcade"]
@@ -217,7 +252,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         global message
         message = await ctx.reply(embed=await diyembed.getembed(self, title=f"{title} / Page 1",
                                           description=f"{zom_response[zom_page]}",
-                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
+                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail=skin_url, image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda), view=view)
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
 
