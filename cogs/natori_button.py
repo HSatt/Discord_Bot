@@ -4,10 +4,11 @@ from discord.ext.commands import Context
 import os
 import random
 from cogs.diyembed import diyembed
+from cogs.remusic import Music
 path = "./data/sana"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
 voices = []
-
+natori_queue = []
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 
@@ -34,23 +35,38 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
         name="natoriplay", # コマンドの名前。設定しない場合は関数名
         aliases=['playnatori', 'nplay', 'pnatori', 'nsound']
     )
-    async def natoriplay(self, ctx, voice_path):
-        if ctx.author.voice is None:
-            await ctx.reply("vc はいらんかい")
+    async def natoriplay(self, ctx, query):
+        query = await self.nsearch(ctx, query)
+        print(query)
+        await Music.join(self, ctx)
+        for content in query:
+            content = path + "/" + content
+            await ctx.send(f'{content} was added to queue!')
+            natori_queue.append(content)
+            if not ctx.voice_client.is_playing():
+                await self.nplayer(ctx, current=0)
 
-        if ctx.voice_client is not None:
-            if ctx.voice_client.is_playing():
-                await ctx.reply("今話してっから待ちなさい！")
+    async def nplayer(self, ctx, current, loop=False):
+        if loop == True:
+            try:
+                print(natori_queue[current])
+            except IndexError:
+                current = 0
+                print(natori_queue[current])
+            source = natori_queue[current]
+            current += 1
+        else:
+            try:
+                print(natori_queue[0])
+            except IndexError:
+                await ctx.reply('No more songs in queue!')
+                await Music.stop(self, ctx)
                 return
-
-        try:
-            await ctx.author.voice.channel.connect()
-        except Exception as e:
-            print(e)
-        ctx.voice_client.play(
-            discord.FFmpegPCMAudio(path + "/" + voice_path), after=None
-        )
-
+            source = natori_queue.pop(0)
+        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
+        ctx.voice_client.play(source, 
+                              after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.nplayer(ctx, current=current)))
+        
     @commands.command()
     async def inf(self, ctx: Context) -> None:
         print("a")
@@ -67,38 +83,61 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
         except Exception as e:
             print(e)
 
-        self.natoriplayloop(ctx)
+        self.natoriloop(ctx)
 
     @commands.command()
     async def nsearch(self, ctx, query):
-        l_in = [s for s in voices if query in s]
+        query = query.lower()
+        raw_result = [s for s in voices if query in s]
+        removed = []
+        for item in raw_result:
+            print(f"{item}")
+            if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg"):
+                print(f"Thumbnail detected! {item}")
+                removed.append(item)
+        for removeitem in removed:
+            raw_result.remove(removeitem)
         result = ''
-        prev_result = l_in[0].split('/')[0]
-        result += f'{l_in[0].split('/')[0]}\n'
-        for directory in l_in:
-            if directory.split('/')[0] != prev_result:
-                result += f'{directory.split('/')[0]}\n'
-                prev_result = directory.split('/')[0]
-            result += f'**┗**{directory.split('/')[1]}\n'
-        self.natori_embed = discord.Embed( # Embedを定義する
-                              title = f"""You searched for "{query}"...""",# タイトル
-                              color = 0x1084fd, # フレーム色指定
-                              description = result, # Embedの説明文
-                              url = f'https://github.com/sanabutton/sounds' # これを設定すると、タイトルが指定URLへのリンクになる
-                              )
-        self.natori_embed.set_author(name = '名取さなの音声再生bot', # Botのユーザー名
-                        url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
-                        icon_url = zunda # Botのアイコンを設定してみる
-                        )
-        self.natori_embed.set_thumbnail(url='https://yt3.googleusercontent.com/Qj-lyidMW6xtEdnv6rDYscGE1kO6K06-i4v8Eiij96YOTo_WdBboLVlEKeE3749ywpyqTec2=s160-c-k-c0x00ffffff-no-rj')
-        self.natori_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
-                            icon_url = zunda)
+        if raw_result == []:
+            await ctx.reply('No results found!')
+            return raw_result
+        result += f'{raw_result[0].split('/')[0]}\n'
+        for directory in raw_result:
+            if not "." in directory.split('/')[1]:
+                count = 1
+                print(directory.split('/'))
+                while True:
+                    for test in directory.split('/'):
+                        if not test in result:
+                            result += f'**' + 'ᅠ' * (count) + f'┗**{test}\n'
+                            if "." in test:
+                                break
+                        count += 1
+                    break
+            else:
+                result += f'**┗**{directory.split('/')[1]}\n'
         try:
-            await ctx.reply(embed=self.natori_embed)
+            await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
+                        author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
+                        footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
             await ctx.reply("うわーん！リストが長すぎます！")
-            print(l_in)
+        print(raw_result)
+        return raw_result
 
+    @commands.command()
+    async def ngetq(self, ctx):
+        reciept = ''
+        for raw_item in natori_queue:
+            getq_response = ''
+            for thing in raw_item.split('/'):
+                if not thing in path:
+                    getq_response += thing + '/'
+            reciept += f'- {getq_response}\n'
+        try:
+            await ctx.reply(embed=await diyembed.getembed(self, title="Queue", color=0x1084fd, description=f"{reciept}",))
+        except discord.HTTPException:
+            await ctx.reply("Queue too long!")
 
     @commands.command()
     async def ping(self, ctx: Context) -> None:
