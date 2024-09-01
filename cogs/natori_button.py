@@ -5,6 +5,7 @@ import os
 import random
 from cogs.diyembed import diyembed
 from cogs.remusic import Music
+import math
 path = "./data/sana"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
 voices = []
@@ -17,7 +18,7 @@ for dir in dirs:
         continue
     files = os.listdir(path + "/" + dir)
     for file in files:
-        file_path = dir + "/" + file
+        file_path = str(dir + "/" + file).lower()
         voices.append(file_path)
 
 # MAKE IT COGGY
@@ -35,13 +36,12 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
         name="natoriplay", # コマンドの名前。設定しない場合は関数名
         aliases=['playnatori', 'nplay', 'pnatori', 'nsound']
     )
-    async def natoriplay(self, ctx, query):
+    async def natoriplay(self, ctx, query=''):
         query = await self.nsearch(ctx, query)
         print(query)
         await Music.join(self, ctx)
         for content in query:
             content = path + "/" + content
-            await ctx.send(f'{content} was added to queue!')
             natori_queue.append(content)
             if not ctx.voice_client.is_playing():
                 await self.nplayer(ctx, current=0)
@@ -86,12 +86,11 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
         self.natoriloop(ctx)
 
     @commands.command()
-    async def nsearch(self, ctx, query):
+    async def nsearch(self, ctx, query=''):
         query = query.lower()
         raw_result = [s for s in voices if query in s]
         removed = []
         for item in raw_result:
-            print(f"{item}")
             if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg"):
                 print(f"Thumbnail detected! {item}")
                 removed.append(item)
@@ -101,27 +100,40 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
         if raw_result == []:
             await ctx.reply('No results found!')
             return raw_result
+        prev_result = raw_result[0].split('/')[0]
         result += f'{raw_result[0].split('/')[0]}\n'
         for directory in raw_result:
-            if not "." in directory.split('/')[1]:
-                count = 1
-                print(directory.split('/'))
-                while True:
-                    for test in directory.split('/'):
-                        if not test in result:
-                            result += f'**' + 'ᅠ' * (count) + f'┗**{test}\n'
-                            if "." in test:
-                                break
-                        count += 1
-                    break
-            else:
-                result += f'**┗**{directory.split('/')[1]}\n'
+            if directory.split('/')[0] != prev_result:
+                result += f'{directory.split('/')[0]}\n'
+                prev_result = directory.split('/')[0]
+            result += f'**┗**{directory.split('/')[1]}\n'
         try:
             await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
                         footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
-            await ctx.reply("うわーん！リストが長すぎます！")
+            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+            print(f"this result contains: {len(result)} characters")
+            first = False
+            for i in range(math.floor(len(result) / 3500)):
+                for check in range(500):
+                    if str(result[3500 * (i + 1) + check:3500 * (i + 1) + check + 1]) == str("\n"):
+                        if first == True:
+                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
+                                                                         description=result[3500 * (i) + prev_check:3500 * (i + 1) + check],  
+                                                                            ))
+                        if first == False:
+                            await ctx.send(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, 
+                                                                            description=result[:3500 + check], 
+                                                                            author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
+                                                                            author_icon=zunda, thumbnail=zunda,
+                                                                            ))
+                            first = True
+                        prev_check = check
+                        break
+            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+                                                                      description=result[3500 * (i + 1) + check:],
+                                                                      footer_text="Pasted by Satt", footer_icon=zunda))
         print(raw_result)
         return raw_result
 
@@ -134,10 +146,38 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
                 if not thing in path:
                     getq_response += thing + '/'
             reciept += f'- {getq_response}\n'
-        try:
+        if len(reciept) <= 6000:
             await ctx.reply(embed=await diyembed.getembed(self, title="Queue", color=0x1084fd, description=f"{reciept}",))
-        except discord.HTTPException:
-            await ctx.reply("Queue too long!")
+        else:
+            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(reciept)}mです！")
+            print(f"this result contains: {len(reciept)} characters")
+            first = False
+            for i in range(math.floor(len(reciept) / 3500)):
+                for check in range(500):
+                    if str(reciept[3500 * (i + 1) + check]) == str("-"):
+                        check -= 1
+                        if first == True:
+                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
+                                                                         description=reciept[3500 * (i) + prev_check:3500 * (i + 1) + check],  
+                                                                            ))
+                        if first == False:
+                            await ctx.send(embed=await diyembed.getembed(self, title=f"""Queue""", color=0x1084fd, 
+                                                                            description=reciept[:3500 + check], 
+                                                                            author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
+                                                                            author_icon=zunda, thumbnail=zunda,
+                                                                            ))
+                            first = True
+                        prev_check = check
+                        break
+            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+                                                                      description=reciept[3500 * (i + 1) + prev_check:],
+                                                                      footer_text="Pasted by Satt", footer_icon=zunda))
+    
+    @commands.command()
+    async def nshuffle(self, ctx):
+        random.shuffle(natori_queue)
+        await ctx.reply('Queue shuffled!')
+        await self.ngetq(ctx)
 
     @commands.command()
     async def ping(self, ctx: Context) -> None:
