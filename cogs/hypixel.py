@@ -6,6 +6,7 @@ import requests
 import datetime
 from cogs.diyembed import diyembed
 import base64
+import urllib.request
 def getInfo(call):
     r = requests.get(call)
     return r.json()
@@ -27,12 +28,27 @@ class MyView(View):
 
     @discord.ui.button(label="⬅️", style=discord.ButtonStyle.primary)
     async def left_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await hypixel.left(self)
-        await interaction.response.send_message("Left Button clicked!", ephemeral=True)
+        view = MyView()
+        global zom_page
+        zom_page += 1
+        if zom_page > 4:
+            zom_page = 0
+        await interaction.response.edit_message(embed=await diyembed.getembed(self, title=f"{title} / Page {zom_page + 1}",
+                                            description=f"{zom_response[zom_page]}",
+                                            author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
+                                            footer_text="Pasted by Satt", footer_icon=zunda), view=view)
+
     @discord.ui.button(label="➡️", style=discord.ButtonStyle.primary)
     async def right_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await hypixel.right(self)
-        await interaction.response.send_message("Right Button clicked!", ephemeral=True)
+        view = MyView()
+        global zom_page
+        zom_page += 1
+        if zom_page > 4:
+            zom_page = 0
+        await interaction.response.edit_message(embed=await diyembed.getembed(self, title=f"{title} / Page {zom_page + 1}",
+                                            description=f"{zom_response[zom_page]}",
+                                            author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
+                                            footer_text="Pasted by Satt", footer_icon=zunda), view=view)
 
 # MAKE IT COGGY
 class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
@@ -82,8 +98,9 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         mojang_data = getInfo(f'https://api.mojang.com/users/profiles/minecraft/{query}')
         uuid = mojang_data["id"]
         # ヘッドの画像URLを生成
-        head_url = f"https://crafatar.com/avatars/{uuid}"
-        return head_url
+        urllib.request.urlretrieve(f"https://crafatar.com/avatars/{uuid}", "data/head.png")
+
+        
 
     # uuid command
     @commands.command()
@@ -132,9 +149,10 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                     desc += str(stats[value])
             except KeyError:
                 desc += "0"
-        await ctx.reply(embed=await diyembed.getembed(self, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
+        file = discord.File("data/head.png", filename="temp.png")
+        await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
                                           description=f"{desc}\n\n **-** **Default Kit:** {hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["default_kit"].title()}",
-                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail=skin_url, image='',
+                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
 
@@ -250,9 +268,10 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         global title
         title = f"{query}'s stats in Zombies 🧟‍♀️⚔️"
         global message
-        message = await ctx.reply(embed=await diyembed.getembed(self, title=f"{title} / Page 1",
+        file = discord.File("data/head.png", filename="temp.png")
+        message = await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{title} / Page 1",
                                           description=f"{zom_response[zom_page]}",
-                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail=skin_url, image='',
+                                          author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda), view=view)
         print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Done fetching {query}'s data!")
 
