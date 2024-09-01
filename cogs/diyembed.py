@@ -9,7 +9,7 @@ class diyembed(commands.Cog):
 
     async def getembed(self, title='', color=0x191919, description='', title_url='', author_name='', author_url='',
                     author_icon='', thumbnail='', image='', field1_name='', field1_value='', field2_name='', field2_value='',
-                    footer_text="Pasted by Satt", footer_icon=zunda):
+                    footer_text='', footer_icon=''):
         self.embed = discord.Embed( # Embedを定義する
                               title = title, # タイトル
                               color = color, # フレーム色指定
