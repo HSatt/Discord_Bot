@@ -273,7 +273,29 @@ class Music(commands.Cog):
         try:
             await ctx.reply(embed=await diyembed.getembed(self, title="Queue", color=0x1084fd, description=f"{reciept}",))
         except discord.HTTPException:
-            await ctx.reply("Queue too long!")
+            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(reciept)}mです！")
+            print(f"this result contains: {len(reciept)} characters")
+            first = False
+            for i in range(math.floor(len(reciept) / 3500)):
+                for check in range(500):
+                    if str(reciept[3500 * (i + 1) + check]) == str("-"):
+                        check -= 1
+                        if first == True:
+                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
+                                                                         description=reciept[3500 * (i) + prev_check:3500 * (i + 1) + check],  
+                                                                            ))
+                        if first == False:
+                            await ctx.send(embed=await diyembed.getembed(self, title=f"Queue", color=0x1084fd, 
+                                                                            description=reciept[:3500 + check], 
+                                                                            author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
+                                                                            author_icon=zunda, thumbnail=zunda,
+                                                                            ))
+                            first = True
+                        prev_check = check
+                        break
+            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+                                                                      description=reciept[3500 * (i + 1) + check:],
+                                                                      footer_text="Pasted by Satt", footer_icon=zunda))
 
     @commands.command()
     async def sound(self, ctx, query):
@@ -283,9 +305,7 @@ class Music(commands.Cog):
     async def fetch(self, ctx, query, raw_result):
         removed = []
         for item in raw_result:
-            print(f"{item}")
             if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg"):
-                print(f"Thumbnail detected! {item}")
                 removed.append(item)
         for removeitem in removed:
             raw_result.remove(removeitem)
@@ -297,24 +317,43 @@ class Music(commands.Cog):
         for directory in raw_result:
             if not "." in directory.split('/')[1]:
                 count = 1
-                print(directory.split('/'))
                 while True:
                     for test in directory.split('/'):
                         if not test in result:
-                            result += f'**' + 'ᅠ' * (count) + f'┗**{test}\n'
+                            result += f'ᅠ' * (count) + f'┗{test}\n'
                             if "." in test:
                                 break
                         count += 1
                     break
             else:
-                result += f'**┗**{directory.split('/')[1]}\n'
+                result += f'┗{directory.split('/')[1]}\n'
         try:
             await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
                         footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
-            await ctx.reply("うわーん！リストが長すぎます！")
-        print(raw_result)
+            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+            print(f"this result contains: {len(result)} characters")
+            first = False
+            for i in range(math.floor(len(result) / 3500)):
+                for check in range(500):
+                    if str(result[3500 * (i + 1) + check:3500 * (i + 1) + check + 1]) == str("\n"):
+                        if first == True:
+                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
+                                                                         description=result[3500 * (i) + prev_check:3500 * (i + 1) + check],  
+                                                                            ))
+                        if first == False:
+                            await ctx.send(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, 
+                                                                            description=result[:3500 + check], 
+                                                                            author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
+                                                                            author_icon=zunda, thumbnail=zunda,
+                                                                            ))
+                            first = True
+                        prev_check = check
+                        break
+            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+                                                                      description=result[3500 * (i + 1) + check:],
+                                                                      footer_text="Pasted by Satt", footer_icon=zunda))
         return raw_result
     
     @commands.command()
@@ -337,6 +376,13 @@ class Music(commands.Cog):
     async def crawsearch(self, ctx, query=''):
         await ctx.reply(await self.csearch(ctx, query=query))
 
+    @commands.command()
+    async def skip(self, ctx, query):
+        try:
+            await ctx.reply(f"Succesfully skipped {music_queue.pop(int(query) - 1)}!")
+            await self.getq(ctx)
+        except IndexError:
+            await ctx.reply('Invalid index!')
 
     async def length(self, query):
         """get length"""
