@@ -150,7 +150,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             except KeyError:
                 desc += "0"
         file = discord.File("data/head.png", filename="temp.png")
-        await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{query}'s stats in Sheep Wars 🐑⚔️",
+        await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{hypixel_data["player"]["displayname"]}'s stats in Sheep Wars 🐑⚔️",
                                           description=f"{desc}\n\n **-** **Default Kit:** {hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["default_kit"].title()}",
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
@@ -266,7 +266,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             desc += await self.zom_get_data(key, value)
         zom_response.append(desc)
         global title
-        title = f"{query}'s stats in Zombies 🧟‍♀️⚔️"
+        title = f"{hypixel_data["player"]["displayname"]}'s stats in Zombies 🧟‍♀️⚔️"
         global message
         file = discord.File("data/head.png", filename="temp.png")
         message = await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{title} / Page 1",

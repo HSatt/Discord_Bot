@@ -1,5 +1,4 @@
 import asyncio
-
 import discord
 import youtube_dl
 import random
@@ -13,6 +12,8 @@ from mutagen.id3 import ID3, APIC
 from mutagen import MutagenError
 import os
 from cogs.diyembed import diyembed
+from cogs.voice import voice
+import json
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -47,6 +48,8 @@ waste = 1275277189230628914 # ゴミ捨て場
 
 music_queue = []
 
+now_playing = ''
+
 path = "data/sounds"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
 voices = []
@@ -75,6 +78,8 @@ for dir in dirs:
         else:
             file_path = str(dir + "/" + file).lower()
             voices.append(file_path)
+with open(f"data/voice/lib/sound.json", "w+", encoding="utf-8") as f:
+    json.dump(voices, f)
 
 cpath = "C://Users/hatos/Music"
 cdirs = [f for f in os.listdir(cpath) if os.path.isdir(cpath + "/" + f)]
@@ -102,45 +107,12 @@ for cdir in cdirs:
         else:
             file_path = str(cdir + "/" + file).lower()
             cvoices.append(file_path)
-
-class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
-        super().__init__(source, volume)
-
-        self.data = data
-
-        self.title = data.get('title')
-        self.url = data.get('url')
-
-    @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-
-        if 'entries' in data:
-            # take first item from a playlist
-            data = data['entries'][0]
-
-        filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
-
+with open(f"data/voice/lib/music.json", "w+", encoding="utf-8") as f:
+    json.dump(cvoices, f)
 
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    async def join(self, ctx):
-        """Joins a voice channel"""
-        if not ctx.message.author.voice:
-            await ctx.send(f" You are not connected to a voice channel")
-            return
-        else:
-            channel = ctx.message.author.voice.channel
-            try:
-                await channel.connect()
-            except Exception as e:
-                print(e)
-                pass
 
     def get_mp3_thumbnail(self, file_path):
         audio = MP3(file_path, ID3=ID3)
@@ -204,7 +176,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def call(self, ctx):
-        await self.join(ctx)
+        await voice.join(self, ctx)
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio("Data/sounds/soundboard/カードが必要なら.wav"))
         ctx.voice_client.play(source, after=lambda e: print(f'Player error: {e}') if e else None)
 
@@ -212,7 +184,7 @@ class Music(commands.Cog):
     async def play(self, ctx, query="", player_loop=False):
         """Plays a file from the local filesystem"""
         query = await self.search(ctx, query)
-        await self.join(ctx)
+        await voice.join(self, ctx)
         for content in query:
             content = path + "/" + content
             await self.prep_embed(ctx, query=content, player_loop=player_loop)
@@ -225,10 +197,9 @@ class Music(commands.Cog):
     async def cplay(self, ctx, query="", player_loop=False):
         query = await self.csearch(ctx, query)
         print(query)
-        await self.join(ctx)
+        await voice.join(self, ctx)
         for content in query:
             content = cpath + "/" + content
-            await self.prep_embed(ctx, query=content, player_loop=player_loop)
             music_queue.append(content)
             print(music_queue)
             if not ctx.voice_client.is_playing():
@@ -241,6 +212,7 @@ class Music(commands.Cog):
         await self.getq(ctx)
 
     async def player(self, ctx, current, loop=False):
+        global now_playing
         if loop == True:
             try:
                 print(music_queue[current])
@@ -248,6 +220,7 @@ class Music(commands.Cog):
                 current = 0
                 print(music_queue[current])
             source = music_queue[current]
+            now_playing = source
             current += 1
         else:
             try:
@@ -257,6 +230,7 @@ class Music(commands.Cog):
                 await self.stop(ctx)
                 return
             source = music_queue.pop(0)
+            now_playing = source
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
         ctx.voice_client.play(source, 
                               after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.player(ctx, current=current, loop=loop)))
@@ -301,81 +275,7 @@ class Music(commands.Cog):
     async def sound(self, ctx, query):
         query = f'soundboard/{query}'
         await self.play(ctx, query=query)
-
-    async def fetch(self, ctx, query, raw_result):
-        removed = []
-        for item in raw_result:
-            if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg"):
-                removed.append(item)
-        for removeitem in removed:
-            raw_result.remove(removeitem)
-        result = ''
-        if raw_result == []:
-            await ctx.reply('No results found!')
-            return raw_result
-        result += f'{raw_result[0].split('/')[0]}\n'
-        for directory in raw_result:
-            if not "." in directory.split('/')[1]:
-                count = 1
-                while True:
-                    for test in directory.split('/'):
-                        if not test in result:
-                            result += f'ᅠ' * (count) + f'┗{test}\n'
-                            if "." in test:
-                                break
-                        count += 1
-                    break
-            else:
-                result += f'┗{directory.split('/')[1]}\n'
-        try:
-            await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
-                        author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
-                        footer_text="Pasted by Satt", footer_icon=zunda))
-        except discord.HTTPException:
-            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
-            print(f"this result contains: {len(result)} characters")
-            first = False
-            for i in range(math.floor(len(result) / 3500)):
-                for check in range(500):
-                    if str(result[3500 * (i + 1) + check:3500 * (i + 1) + check + 1]) == str("\n"):
-                        if first == True:
-                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
-                                                                         description=result[3500 * (i) + prev_check:3500 * (i + 1) + check],  
-                                                                            ))
-                        if first == False:
-                            await ctx.send(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, 
-                                                                            description=result[:3500 + check], 
-                                                                            author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
-                                                                            author_icon=zunda, thumbnail=zunda,
-                                                                            ))
-                            first = True
-                        prev_check = check
-                        break
-            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
-                                                                      description=result[3500 * (i + 1) + check:],
-                                                                      footer_text="Pasted by Satt", footer_icon=zunda))
-        return raw_result
     
-    @commands.command()
-    async def search(self, ctx, query=''):
-        query = query.lower()
-        raw_result = [s for s in voices if query in s]
-        return await self.fetch(ctx, query=query, raw_result=raw_result)
-    
-    @commands.command()
-    async def csearch(self, ctx, query=''):
-        query = query.lower()
-        raw_result = [s for s in cvoices if query in s]
-        return await self.fetch(ctx, query=query, raw_result=raw_result)
-    
-    @commands.command()
-    async def rawsearch(self, ctx, query=''):
-        await ctx.reply(await self.search(ctx, query=query))
-
-    @commands.command()
-    async def crawsearch(self, ctx, query=''):
-        await ctx.reply(await self.csearch(ctx, query=query))
-
     @commands.command()
     async def skip(self, ctx, query):
         try:
@@ -384,6 +284,15 @@ class Music(commands.Cog):
         except IndexError:
             await ctx.reply('Invalid index!')
         
+    @commands.command(aliases=['np'])
+    async def nowplaying(self, ctx):
+        if now_playing.startswith("C://"):
+            await voice.nowplaying(self, ctx, path_len=len(cpath))
+        elif now_playing.startswith("data/"):
+            await voice.nowplaying(self, ctx, path_len=len(path))
+        else:
+            await voice.nowplaying(self, ctx, path_len=len("./data/sana"))
+
     @commands.command()
     async def loop(self, ctx):
         """omg! loop feature"""
@@ -394,12 +303,11 @@ class Music(commands.Cog):
     @commands.command()
     async def stop(self, ctx):
         """Stops and disconnects the bot from voice"""
-        await ctx.reply('Player done!')
-        ctx.voice_client.stop()
-        await ctx.voice_client.disconnect()
+        await voice.stop(self, ctx)
         global music_queue
         music_queue = []
         print(music_queue)
     
 async def setup(bot: commands.Bot):
+
     await bot.add_cog(Music(bot))

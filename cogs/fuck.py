@@ -121,7 +121,7 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author == self.bot.user:
+        if message.author == self.bot.user or message.author.bot:
             return
         for key, value in trigger.items():
             if key in message.content:
