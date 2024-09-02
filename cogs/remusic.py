@@ -383,15 +383,6 @@ class Music(commands.Cog):
             await self.getq(ctx)
         except IndexError:
             await ctx.reply('Invalid index!')
-
-    async def length(self, query):
-        """get length"""
-        probe = ffmpeg.probe(query, cmd='ffprobe')
-        stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
-        global duration
-        duration = float(stream['duration'])
-        print(f'This song is {duration}s long.')
-        return duration
         
     @commands.command()
     async def loop(self, ctx):
