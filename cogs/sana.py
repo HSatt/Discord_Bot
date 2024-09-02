@@ -4,9 +4,11 @@ from discord.ext.commands import Context
 import os
 import random
 from cogs.diyembed import diyembed
-from cogs.remusic import Music
 import math
 from mutagen.mp3 import MP3
+from cogs.voice import voice
+import json
+
 now_playing = ''
 path = "./data/sana"
 dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
@@ -22,6 +24,8 @@ for dir in dirs:
     for file in files:
         file_path = str(dir + "/" + file).lower()
         voices.append(file_path)
+with open(f"data/voice/lib/sana.json", "w+", encoding="utf-8") as f:
+    json.dump(voices, f)
 
 # MAKE IT COGGY
 class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
@@ -41,7 +45,7 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
     async def natoriplay(self, ctx, query=''):
         query = await self.nsearch(ctx, query)
         print(query)
-        await Music.join(self, ctx)
+        await voice.join(self, ctx)
         for content in query:
             content = path + "/" + content
             natori_queue.append(content)
@@ -49,31 +53,10 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
                 await self.nplayer(ctx, current=0)
 
     async def nplayer(self, ctx, current, loop=False):
-        if loop == True:
-            try:
-                print(natori_queue[current])
-            except IndexError:
-                current = 0
-                print(natori_queue[current])
-            source = natori_queue[current]
-            current += 1
-        else:
-            try:
-                print(natori_queue[0])
-            except IndexError:
-                await ctx.reply('No more songs in queue!')
-                await Music.stop(self, ctx)
-                return
-            source = natori_queue.pop(0)
-            global now_playing
-            now_playing = source
-        source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
-        ctx.voice_client.play(source, 
-                              after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(self.nplayer(ctx, current=current)))
+        await voice.player(self, ctx, current, natori_queue, loop)
         
     @commands.command()
     async def inf(self, ctx: Context) -> None:
-        print("a")
         if ctx.author.voice is None:
             await ctx.reply("vc はいらんかい")
 
@@ -176,18 +159,6 @@ class natori_button(commands.Cog): # xyzはcogの名前(ファイル名と同じ
             await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
                                                                       description=reciept[3500 * (i + 1) + prev_check:],
                                                                       footer_text="Pasted by Satt", footer_icon=zunda))
-    @commands.command(aliases=['np'])
-    async def nowplaying(self, ctx):
-        try:
-            file = discord.File(now_playing)
-            await ctx.send(file=file, embed=await diyembed.getembed(self, title=f"""Now Playing...""", color=0x1084fd, 
-                                                    description=f"{now_playing}, {round(await self.length(query=str(now_playing)), 3)}s", 
-                                                    author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
-                                                    author_icon=zunda, thumbnail=zunda,
-                                                    ))
-        except FileNotFoundError:
-            await ctx.reply('Not Playing!')
-            return
         
     @commands.command()
     async def getme(self, ctx, query):
