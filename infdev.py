@@ -18,7 +18,6 @@ initial_extensions = (
     "cogs.gamble",
     "cogs.youtube",
     "cogs.tweet",
-    "cogs.remusic",
     "cogs.e",
     "cogs.diyembed",
     "cogs.hypixel"
