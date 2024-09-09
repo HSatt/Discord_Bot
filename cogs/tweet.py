@@ -65,11 +65,8 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                             break
                     before_tweet[screen_name] = latest_tweet[screen_name]
                     await self.save_before_tweet()
-                except ServerError:
+                except ServerError or ReadTimeout or IndexError:
                     channel = self.bot.get_channel(Manage_Channel)
-                    await channel.send(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
-                    print(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
-                except ReadTimeout:
                     await channel.send(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
                     print(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
             await asyncio.sleep(CHECK_INTERVAL)
