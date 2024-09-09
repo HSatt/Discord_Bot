@@ -1,16 +1,10 @@
 import discord
 from discord.ext import commands
-import random
-import datetime
 from atproto import Client # type: ignore
-import time
-import asyncio
-from pyngrok import ngrok
-from ytnoti import AsyncYouTubeNotifier, Video
 import json
 import pretty_help
 from pretty_help import PrettyHelp
-
+import datetime
 initial_extensions = (
     "cogs.getnatori", 
     "cogs.fuck",
@@ -20,7 +14,7 @@ initial_extensions = (
     "cogs.tweet",
     "cogs.e",
     "cogs.diyembed",
-    "cogs.hypixel"
+    "cogs.hypixel",
     "cogs.voice"
 )
 
@@ -67,10 +61,16 @@ class MyBot(commands.Bot):
             except Exception as e:
                 print(e)
                 print(f"Failed to load extension {extension}.")
-            
+
 bot = MyBot()
 bot_token = ''
 with open("data/!important/bot_token.json", "r", encoding="utf-8") as f:
     bot_token = json.load(f)
+
+@bot.event
+async def on_ready():
+    print(f'[{datetime.datetime.now().strftime("%H:%M:%S")}] We have logged in as {bot.user}')
+    channel = bot.get_channel(Manage_Channel)
+    await channel.send(f'The Bot is up! @ {datetime.datetime.now().strftime("%H:%M:%S")}')
 
 bot.run(bot_token)
