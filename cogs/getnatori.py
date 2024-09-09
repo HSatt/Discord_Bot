@@ -133,9 +133,6 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
     
     @commands.Cog.listener()
     async def on_ready(self) -> None: # selfめっちゃ大事！！！！！！！！ 
-        print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] We have logged in as {self.bot.user}')
-        channel = self.bot.get_channel(Manage_Channel)
-        await channel.send(f'The Bot is up! @ {datetime.datetime.now().strftime('%H:%M:%S')}')
         # BlueSkyを10秒おきに読み込む
         await self.InfStalk()
 
