@@ -10,6 +10,7 @@ import json
 import math
 import asyncio
 import os
+import random
 
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
@@ -328,7 +329,12 @@ class voice(commands.Cog):
             await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
                                                                       description=reciept[3500 * (i + 1) + check:],
                                                                       footer_text="Pasted by Satt", footer_icon=zunda))
-
-
+            
+    @commands.command()
+    async def shuffle(self, ctx):
+        random.shuffle(queue)
+        await ctx.reply('Queue shuffled!')
+        await self.getq(ctx)
+        
 async def setup(bot):
     await bot.add_cog(voice(bot))
