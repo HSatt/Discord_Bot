@@ -10,6 +10,7 @@ from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from atproto_client.exceptions import BadRequestError
 from cogs import diyembed
+
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 
@@ -125,7 +126,7 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
                 else:
                     print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
                     await channel.send(embed=self.bsky_embed)
-                    bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text  # コルーチンを実行する
+                    bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text 
                     with open("data/bsky_followed.json", "w+", encoding="utf-8") as f:
                         json.dump(bsky_followed, f)
                     self.dupe_red = False

@@ -28,10 +28,7 @@ co-developped by donotsolveme
 Manage_Channel = 1273134816308625439
 
 # ずんだもん
-zunda = "https://cdn.discordapp.com/emojis/1183011525947047957.png&quality=lossless"
-
-# Blueskyから情報を持ってくる
-bsky_client = Client("https://api.bsky.app") # botに入れるならbsky_clientとかのほうがわかりやすいかも - おけ！
+zunda = 'https://i.imgur.com/6bgRNLR.png'
 
 # help
 # embedの下の文字
@@ -62,15 +59,14 @@ class MyBot(commands.Bot):
                 print(e)
                 print(f"Failed to load extension {extension}.")
 
+    async def on_ready(self):
+        print(f'Logged in as {self.user.name}#{self.user.discriminator} ({self.user.id})')
+        channel = bot.get_channel(Manage_Channel)
+        await channel.send(f'The Bot is up! @ {datetime.datetime.now().strftime("%H:%M:%S")}')
+
 bot = MyBot()
 bot_token = ''
 with open("data/!important/bot_token.json", "r", encoding="utf-8") as f:
     bot_token = json.load(f)
-
-@bot.event
-async def on_ready():
-    print(f'[{datetime.datetime.now().strftime("%H:%M:%S")}] We have logged in as {bot.user}')
-    channel = bot.get_channel(Manage_Channel)
-    await channel.send(f'The Bot is up! @ {datetime.datetime.now().strftime("%H:%M:%S")}')
 
 bot.run(bot_token)
