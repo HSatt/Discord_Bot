@@ -187,7 +187,9 @@ class voice(commands.Cog):
             print(f"Error loading audio file: {query}")
             return 0
         
-    @commands.command()
+    @commands.command(
+        aliases=['p']
+    )
     async def play(self, ctx, query="", player_loop=False):
         """Plays a file from the local filesystem"""
         await self.search(ctx, query)
@@ -219,10 +221,15 @@ class voice(commands.Cog):
         source = queue.pop(0)
         if loop == True:
             queue.append(source)
-        global now_playing
-        now_playing = source
         with open(f"data/voice/np/{self.bot.user.id}.json", "w+", encoding="utf-8") as f:
-            json.dump(now_playing, f)
+            json.dump(source, f)
+        if source.startswith("C://"):
+            path_len = len(cpath)
+        elif source.startswith("data/"):
+            path_len = len(path)
+        else:
+            path_len = len(npath)
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=source.split('/')[-1].title()))
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
         ctx.voice_client.play(source, 
                               after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(voice.player(self, ctx, current=current, loop=loop)))
@@ -299,7 +306,7 @@ class voice(commands.Cog):
                                                                       description=result[3500 * (i + 1) + check:],
                                                                       footer_text="Pasted by Satt", footer_icon=zunda))
         for item in raw_result:
-            raw_result[raw_result.index(item)] = path + "/" + item
+            raw_result[raw_result.index(item)] = pre_path + "/" + item
         with open(f"data/voice/result/search.json", "w+", encoding="utf-8") as f:
             json.dump(raw_result, f)
         wait_search.set()
@@ -339,16 +346,24 @@ class voice(commands.Cog):
         except IndexError:
             await ctx.reply('Invalid index!')
 
+    async def pathlen(self, query):
+        if query.startswith("C://"):
+            path_len = len(cpath)
+        elif query.startswith("data/"):
+            path_len = len(path)
+        else:
+            path_len = len(npath)
+        return path_len
+
     @commands.command()
     async def getq(self, ctx):
         reciept = ''
+        with open(f"data/voice/np/{self.bot.user.id}.json", "r", encoding="utf-8") as f:
+            now_playing = json.load(f)
+            path_len = await self.pathlen(now_playing)
+            reciept += f'**Now Playing**: {now_playing[path_len:]}\n'
         for raw_item in queue:
-            if raw_item.startswith("C://"):
-                path_len = len(cpath)
-            elif raw_item.startswith("data/"):
-                path_len = len(path)
-            else:
-                path_len = len(npath)
+            path_len = await self.pathlen(raw_item)
             reciept += f'- {raw_item[path_len:]}\n'
         try:
             await ctx.reply(embed=await diyembed.getembed(self, title="Queue", color=0x1084fd, description=f"{reciept}",))
