@@ -1,12 +1,8 @@
 import discord
 from discord.ext import commands
 import random
-import datetime
 from atproto import Client # type: ignore
-import time
 import asyncio
-from pyngrok import ngrok
-from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from cogs.diyembed import diyembed
 # チャンネル指定
