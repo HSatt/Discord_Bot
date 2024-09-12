@@ -170,6 +170,7 @@ class voice(commands.Cog):
         queue = []
         with open(f"data/voice/np/{self.bot.user.id}.json", "w+", encoding="utf-8") as f:
             json.dump("", f)
+        await self.bot.change_presence(activity=None)
         
     async def length(self, query):
         try:
@@ -400,7 +401,7 @@ class voice(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.rel(self)
+        await self.rel()
 
 async def setup(bot):
     await bot.add_cog(voice(bot))
