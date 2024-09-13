@@ -6,7 +6,7 @@ import pretty_help
 from pretty_help import PrettyHelp
 import datetime
 initial_extensions = (
-    "cogs.getnatori", 
+    "cogs.bluesky", 
     "cogs.fuck",
     "cogs.delete",
     "cogs.gamble",
