@@ -9,7 +9,7 @@ from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from atproto_client.exceptions import BadRequestError
-from cogs import diyembed
+from cogs.diyembed import diyembed
 
 # チャンネル指定
 Manage_Channel = 1273134816308625439
@@ -26,7 +26,7 @@ with open("data/bsky_followed.json", "r", encoding="utf-8") as f:
 print('Successfully loaded previous bsky_followed record!')
 
 # MAKE IT COGGY
-class getnatori(commands.Cog): # ファイル名と同じにすると良い
+class bluesky(commands.Cog): # ファイル名と同じにすると良い
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
@@ -46,9 +46,6 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
         num -= 1
         target_uri = bsky_client.get_author_feed(id).feed[num].post.uri
         useless = target_uri.split('/')
-        global image_red
-        global bsky_embed
-        global bsky_image
         try:
             self.bsky_image = bsky_client.get_author_feed(id).feed[num].post.embed.images[0].fullsize
             self.image_red = False
@@ -61,23 +58,18 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
                 self.image_red = True
             return
         finally:
-            self.bsky_embed = discord.Embed( # Embedを定義する
-                              title = f"Latest Post {id}",# タイトル
-                              color = 0x1084fd, # フレーム色指定
-                              description = bsky_client.get_author_feed(id).feed[num].post.record.text, # Embedの説明文
-                              url = f'https://bsky.app/profile/natorisana.com/post/{useless[-1]}' # これを設定すると、タイトルが指定URLへのリンクになる
-                              )
-            self.bsky_embed.set_author(name = 'BlueskyストーカーBot', # Botのユーザー名
-                         url = "https://satt.carrd.co/", # titleのurlのようにnameをリンクにできる。botのWebサイトとかGithubとか
-                         icon_url = bsky_client.get_author_feed(id).feed[num].post.author.avatar # Botのアイコンを設定してみる
-                         )
-            self.bsky_embed.set_thumbnail(url = "https://image.example.com/thumbnail.png") # サムネイルとして小さい画像を設定できる
-            self.bsky_embed.set_image(url = self.bsky_image) # 大きな画像タイルを設定できる
-            self.bsky_embed.add_field(name = "Like ❤", value = bsky_client.get_author_feed(id).feed[num].post.like_count) # フィールドを追加。
-            self.bsky_embed.add_field(name = "Repost ♻️", value = bsky_client.get_author_feed(id).feed[num].post.repost_count)
-            self.bsky_embed.set_footer(text = "Pasted by Satt", # フッターには開発者の情報でも入れてみる
-                                icon_url = zunda)
-            return bsky_client.get_author_feed(id).feed[0].post.record.text
+            self.bsky_embed = diyembed.getembed(self, title = f"Latest Post {id}", color=0x1084fd, 
+                                                    description=bsky_client.get_author_feed(id).feed[num].post.record.text, 
+                                                    title_url=f'https://bsky.app/profile/natorisana.com/post/{useless[-1]}', 
+                                                    author_name='BlueskyストーカーBot', author_url="https://satt.carrd.co/",
+                                                    author_icon=bsky_client.get_author_feed(id).feed[num].post.author.avatar,
+                                                    thumbnail="https://image.example.com/thumbnail.png",
+                                                    image=self.bsky_image,
+                                                    field1_name="Like ❤", field1_value=bsky_client.get_author_feed(id).feed[num].post.like_count,
+                                                    field2_name="Repost ♻️", field2_value=bsky_client.get_author_feed(id).feed[num].post.repost_count,
+                                                    footer_text="Pasted by Satt", footer_icon=zunda
+                                                    )
+            return self.bsky_embed
 
 
     # natoriコマンドの定義
@@ -112,11 +104,9 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
     # InfStalk
     async def InfStalk(self):
         self.dupe_red = False
-        global bsky_embed
         channel = self.bot.get_channel(Manage_Channel)
         while True:
             for id, prev_post in bsky_followed.items():
-                self.getnatori(id, 1)
                 if prev_post == bsky_client.get_author_feed(id).feed[0].post.record.text:
                     if self.dupe_red == True:
                         continue
@@ -125,7 +115,8 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
                         self.dupe_red = True
                 else:
                     print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
-                    await channel.send(embed=self.bsky_embed)
+                    bsky_embed = await self.getnatori(id, 1)
+                    await channel.send(embed=bsky_embed)
                     bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text 
                     with open("data/bsky_followed.json", "w+", encoding="utf-8") as f:
                         json.dump(bsky_followed, f)
@@ -138,5 +129,5 @@ class getnatori(commands.Cog): # ファイル名と同じにすると良い
         await self.InfStalk()
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(getnatori(bot))
+    await bot.add_cog(bluesky(bot))
 
