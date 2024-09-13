@@ -13,6 +13,7 @@ from twikit import Client, Tweet
 from twikit.errors import ServerError
 from httpx import ReadTimeout
 # チャンネル指定
+
 Manage_Channel = 1273134816308625439
 
 ###########################################
