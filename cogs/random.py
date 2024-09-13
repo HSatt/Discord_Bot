@@ -5,8 +5,6 @@ from atproto import Client # type: ignore
 import asyncio
 import json
 from cogs.diyembed import diyembed
-# チャンネル指定
-Manage_Channel = 1273134816308625439
 # target list
 fucked = []
 items = [
@@ -33,7 +31,7 @@ items = [
 ]
 
 # MAKE IT COGGY
-class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
+class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -88,5 +86,30 @@ class fuck(commands.Cog): # xyzはcogの名前(ファイル名と同じにする
                     await asyncio.sleep(0.1)
         print(fucked)
 
-async def setup(bot: commands.Bot):
-    await bot.add_cog(fuck(bot))
+    @commands.command()
+    async def announce(self, ctx, comment):
+        if ctx.author.id == 754839099260665877:
+            with open("data/Server/channels.json", "r", encoding="utf-8") as f:
+                channels = json.load(f)
+            for Key, Announce_Channel in channels.items():
+                channel = self.bot.get_channel(Announce_Channel)
+                announce = await channel.send(comment)
+                await ctx.send(f"Sent {comment}: https://discord.com/channels/{Key}/{Announce_Channel}/{announce.id}")
+
+    @commands.command()
+    async def add_channel(self, ctx, channel_id):
+        with open("data/Server/channels.json", "r", encoding="utf-8") as f:
+            channels = json.load(f)
+        channel = self.bot.get_channel(int(channel_id))
+        try:
+            await channel.send("This channel is now listening to events!")
+            await ctx.reply("Added the channel!")
+            channels[ctx.guild.id] = int(channel_id)
+            with open("data/Server/channels.json", "w+", encoding="utf-8") as f:
+                json.dump(channels, f)
+        except discord.HTTPException:
+            await ctx.reply("The channel ID you sent is invalid!")
+            return
+
+async def setup(bot: commands.Bot): 
+    await bot.add_cog(random(bot))
