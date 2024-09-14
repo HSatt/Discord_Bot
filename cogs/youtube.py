@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
 import random
 import datetime
 from atproto import Client # type: ignore
@@ -11,6 +12,9 @@ import json
 from httpx import InvalidURL
 import requests
 from bs4 import BeautifulSoup
+from cogs.diyembed import diyembed
+from cogs.bluesky import bluesky
+from cogs.tweet import tweet
 
 # チャンネル指定
 Manage_Channel = 1273134816308625439
@@ -32,7 +36,7 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-        self.notifier = AsyncYouTubeNotifier()
+        youtube.notifier = AsyncYouTubeNotifier()
 
         @self.notifier.upload()
         async def listener(video: Video):
@@ -48,15 +52,12 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         for channel in subscribed:
             await self.notifier.subscribe(channel)  # Channel ID of Satt
         await self.notifier.serve() # Youtube君をスクレイピングする(ガチ)
-    
+
     # subscribeコマンド
-    @commands.command(
-        name="subscribe", # コマンドの名前。設定しない場合は関数名
-        aliases=["sub"]
-    )
-    async def subscribe(self, ctx, channel_id: str):
+    @commands.command()
+    async def sub(self, ctx, channel_id: str):
         try:
-            await self.notifier.subscribe(channel_id)
+            await youtube.notifier.subscribe(channel_id)
             subscribed.append(channel_id)
             await ctx.reply(f'Succesfully subscribed {channel_id}!')
             with open("data/subscribed.json", "w+", encoding="utf-8") as f:
@@ -83,6 +84,7 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                 id = link["href"].split("/")[-1]
                 print(id, end="")
                 await ctx.reply(f'id: {id}')
+                return id
         except Exception as e:
             print(e)
             await ctx.reply(e)

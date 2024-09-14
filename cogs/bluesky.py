@@ -38,11 +38,11 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
     async def latest(self, ctx):
         await self.natori(ctx, 1)
 
-    # getnatoriコマンドの定義
+    # blueskyコマンドの定義
     # 画像チェッㇰ
     image_red = False
     # 中身
-    def getnatori(self, id, num: int):
+    def bluesky(self, id, num: int):
         num -= 1
         target_uri = bsky_client.get_author_feed(id).feed[num].post.uri
         useless = target_uri.split('/')
@@ -58,9 +58,9 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
                 self.image_red = True
             return
         finally:
-            self.bsky_embed = diyembed.getembed(self, title = f"Latest Post {id}", color=0x1084fd, 
+            self.bsky_embed = diyembed.getembed(self, title = f"Latest Post from {id}", color=0x1084fd, 
                                                     description=bsky_client.get_author_feed(id).feed[num].post.record.text, 
-                                                    title_url=f'https://bsky.app/profile/natorisana.com/post/{useless[-1]}', 
+                                                    title_url=f'https://bsky.app/profile/{id}/post/{useless[-1]}', 
                                                     author_name='BlueskyストーカーBot', author_url="https://satt.carrd.co/",
                                                     author_icon=bsky_client.get_author_feed(id).feed[num].post.author.avatar,
                                                     thumbnail="https://image.example.com/thumbnail.png",
@@ -77,8 +77,8 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
         name="natori", # コマンドの名前。設定しない場合は関数名
     )
     async def natori(self, ctx, num: int):
-        self.getnatori("natorisana.com", num)
-        await ctx.send(embed = self.bsky_embed) # embedの送信には、embed={定義したembed名}
+        self.bluesky("natorisana.com", num)
+        await ctx.send(embed=self.bsky_embed) # embedの送信には、embed={定義したembed名}
 
     # bfollowコマンドの定義
     @commands.command(
@@ -87,6 +87,13 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
     async def bfollow(self, ctx, id):
         try:
             bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text
+            with open("data/bsky_followed.json", "w+", encoding="utf-8") as f:
+                json.dump(bsky_followed, f)
+            with open(f"data/Server/followed/{ctx.guild.id}.json", "r", encoding="utf-8") as f:
+                guild_bsky_followed = json.load(f)
+            guild_bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text
+            with open(f"data/Server/followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
+                json.dump(guild_bsky_followed, f)
             await ctx.reply(f'Succesfully followed {id} in Bluesky!\nRecent post:{bsky_followed[id]}')
             print(f'Succesfully followed {id} in Bluesky!\nRecent post:{bsky_followed[id]}')
         except BadRequestError as e:
@@ -115,8 +122,19 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
                         self.dupe_red = True
                 else:
                     print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
-                    bsky_embed = await self.getnatori(id, 1)
-                    await channel.send(embed=bsky_embed)
+                    bsky_embed = await self.bluesky(id, 1)
+                    with open("data/Server/channels.json", "r", encoding="utf-8") as f:
+                        channels = json.load(f)
+                    for key, channel_id in channels.items():
+                        with open(f"data/Server/followed/{key}.json", "r", encoding="utf-8") as f:
+                            guild_followed = json.load(f)
+                        for followed_id in guild_followed:
+                            if followed_id == id:
+                                channel = self.bot.get_channel(channel_id)
+                                await channel.send(embed=bsky_embed)
+                                guild_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text
+                            else:
+                                pass
                     bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text 
                     with open("data/bsky_followed.json", "w+", encoding="utf-8") as f:
                         json.dump(bsky_followed, f)
@@ -129,5 +147,6 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
         await self.InfStalk()
 
 async def setup(bot: commands.Bot):
+
     await bot.add_cog(bluesky(bot))
 

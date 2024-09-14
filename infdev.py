@@ -7,8 +7,7 @@ from pretty_help import PrettyHelp
 import datetime
 initial_extensions = (
     "cogs.bluesky", 
-    "cogs.fuck",
-    "cogs.delete",
+    "cogs.random",
     "cogs.gamble",
     "cogs.youtube",
     "cogs.tweet",
