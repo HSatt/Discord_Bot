@@ -112,6 +112,13 @@ class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         except discord.HTTPException:
             await ctx.reply("The channel ID you sent is invalid!")
             return
+        
+    @commands.command()
+    async def sex(self, ctx, message_id):
+        message = await ctx.fetch_message(int(message_id))
+        await message.add_reaction("🇸")
+        await message.add_reaction("🇪")
+        await message.add_reaction("🇽")
 
 async def setup(bot: commands.Bot): 
     await bot.add_cog(random(bot))
