@@ -224,12 +224,6 @@ class voice(commands.Cog):
             queue.append(source)
         with open(f"data/voice/np/{self.bot.user.id}.json", "w+", encoding="utf-8") as f:
             json.dump(source, f)
-        if source.startswith("C://"):
-            path_len = len(cpath)
-        elif source.startswith("data/"):
-            path_len = len(path)
-        else:
-            path_len = len(npath)
         await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=source.split('/')[-1].title()))
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
         ctx.voice_client.play(source, 
