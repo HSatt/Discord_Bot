@@ -107,6 +107,8 @@ class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             channels[ctx.guild.id] = int(channel_id)
             with open("data/Server/channels.json", "w+", encoding="utf-8") as f:
                 json.dump(channels, f)
+            with open(f"data/Server/followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
+                json.dump({}, f)
         except discord.HTTPException:
             await ctx.reply("The channel ID you sent is invalid!")
             return
