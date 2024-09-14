@@ -31,29 +31,6 @@ with open("data/subscribed.json", "r", encoding="utf-8") as f:
     subscribed = json.load(f)
 print(subscribed)
 
-# buttons
-class Follow_Bridge(View):
-    def __init__(self, ctx, target_id):
-        super().__init__()
-        self.ctx = ctx
-        self.target_id = target_id
-
-    @discord.ui.button(emoji="<:youtube:1284353556836778024>", label="Bluesky", style=discord.ButtonStyle.primary)
-    async def bsky_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"Bluesky上の{self.target_id}をフォローします…", ephemeral=True)
-        await bluesky.bfollow(self, self.ctx, self.target_id)
-    
-    @discord.ui.button(label="Twitter", style=discord.ButtonStyle.primary)
-    async def twitter_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"Twitter上の{self.target_id}をフォローします…", ephemeral=True)
-        await tweet.follow(self, self.ctx, self.target_id)
-
-    @discord.ui.button(label="Youtube", style=discord.ButtonStyle.primary)
-    async def youtube_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"Youtube上の{self.target_id}をフォローします…", ephemeral=True)
-        self.target_id = await youtube.convert(self, self.ctx, self.target_id)
-        await youtube.sub(self, self.ctx, self.target_id)
-
 # MAKE IT COGGY
 class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
@@ -76,12 +53,6 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             await self.notifier.subscribe(channel)  # Channel ID of Satt
         await self.notifier.serve() # Youtube君をスクレイピングする(ガチ)
 
-    # followsコマンド
-    @commands.command()
-    async def follows(self, ctx, target_id):
-        view = Follow_Bridge(ctx, target_id)
-        await ctx.reply(view=view, embed=await diyembed.getembed(self, title=f"""どのプラットフォームで"{target_id}"をフォローしますか？""", color=0x1084fd,))
-    
     # subscribeコマンド
     @commands.command()
     async def sub(self, ctx, channel_id: str):
