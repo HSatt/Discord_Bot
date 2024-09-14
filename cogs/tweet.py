@@ -104,9 +104,9 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Succesfully saved {screen_name}’s tweets!')
 
     @commands.command(
-        name="follow", # コマンドの名前。設定しない場合は関数名
+        name="tfollow", # コマンドの名前。設定しない場合は関数名
     )
-    async def follow(self, ctx, name: str):
+    async def tfollow(self, ctx, name: str):
         try:
             user = await client.get_user_by_screen_name(name)
             temp_user_id = user.id
@@ -120,7 +120,8 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             temp_before_tweet = await self.get_latest_tweet(temp_user_id)
             before_tweet[name] = temp_before_tweet.created_at_datetime.timestamp()
             print(f'\033[1m>>>>> {before_tweet} <<<<<\033[0m')
-        except:
+        except Exception as e:
+            print(e)
             await ctx.reply('The user you typed is either suspended or misspelled.')
     
     @commands.command(

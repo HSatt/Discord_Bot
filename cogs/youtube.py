@@ -56,7 +56,7 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
     )
     async def subscribe(self, ctx, channel_id: str):
         try:
-            await self.notifier.subscribe(channel_id)
+            await AsyncYouTubeNotifier.subscribe(self=self, channel_ids=channel_id)
             subscribed.append(channel_id)
             await ctx.reply(f'Succesfully subscribed {channel_id}!')
             with open("data/subscribed.json", "w+", encoding="utf-8") as f:
@@ -83,6 +83,7 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                 id = link["href"].split("/")[-1]
                 print(id, end="")
                 await ctx.reply(f'id: {id}')
+                return id
         except Exception as e:
             print(e)
             await ctx.reply(e)
