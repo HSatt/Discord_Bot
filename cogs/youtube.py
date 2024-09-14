@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ui import Button, View
 import random
 import datetime
 from atproto import Client # type: ignore
@@ -11,6 +12,9 @@ import json
 from httpx import InvalidURL
 import requests
 from bs4 import BeautifulSoup
+from cogs.diyembed import diyembed
+from cogs.bluesky import bluesky
+from cogs.tweet import tweet
 
 # チャンネル指定
 Manage_Channel = 1273134816308625439
@@ -27,12 +31,35 @@ with open("data/subscribed.json", "r", encoding="utf-8") as f:
     subscribed = json.load(f)
 print(subscribed)
 
+# buttons
+class Follow_Bridge(View):
+    def __init__(self, ctx, target_id):
+        super().__init__()
+        self.ctx = ctx
+        self.target_id = target_id
+
+    @discord.ui.button(emoji="<:youtube:1284353556836778024>", label="Bluesky", style=discord.ButtonStyle.primary)
+    async def bsky_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f"Bluesky上の{self.target_id}をフォローします…", ephemeral=True)
+        await bluesky.bfollow(self, self.ctx, self.target_id)
+    
+    @discord.ui.button(label="Twitter", style=discord.ButtonStyle.primary)
+    async def twitter_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f"Twitter上の{self.target_id}をフォローします…", ephemeral=True)
+        await tweet.follow(self, self.ctx, self.target_id)
+
+    @discord.ui.button(label="Youtube", style=discord.ButtonStyle.primary)
+    async def youtube_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f"Youtube上の{self.target_id}をフォローします…", ephemeral=True)
+        self.target_id = await youtube.convert(self, self.ctx, self.target_id)
+        await youtube.sub(self, self.ctx, self.target_id)
+
 # MAKE IT COGGY
 class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-        self.notifier = AsyncYouTubeNotifier()
+        youtube.notifier = AsyncYouTubeNotifier()
 
         @self.notifier.upload()
         async def listener(video: Video):
@@ -48,15 +75,18 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         for channel in subscribed:
             await self.notifier.subscribe(channel)  # Channel ID of Satt
         await self.notifier.serve() # Youtube君をスクレイピングする(ガチ)
+
+    # followsコマンド
+    @commands.command()
+    async def follows(self, ctx, target_id):
+        view = Follow_Bridge(ctx, target_id)
+        await ctx.reply(view=view, embed=await diyembed.getembed(self, title=f"""どのプラットフォームで"{target_id}"をフォローしますか？""", color=0x1084fd,))
     
     # subscribeコマンド
-    @commands.command(
-        name="subscribe", # コマンドの名前。設定しない場合は関数名
-        aliases=["sub"]
-    )
-    async def subscribe(self, ctx, channel_id: str):
+    @commands.command()
+    async def sub(self, ctx, channel_id: str):
         try:
-            await AsyncYouTubeNotifier.subscribe(self=self, channel_ids=channel_id)
+            await youtube.notifier.subscribe(channel_id)
             subscribed.append(channel_id)
             await ctx.reply(f'Succesfully subscribed {channel_id}!')
             with open("data/subscribed.json", "w+", encoding="utf-8") as f:

@@ -30,7 +30,7 @@ class Follow_Bridge(View):
     async def youtube_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Youtube上の{self.target_id}をフォローします…", ephemeral=True)
         self.target_id = await youtube.convert(self, self.ctx, self.target_id)
-        await youtube.subscribe(self, self.ctx, self.target_id)
+        await youtube.sub(self, self.ctx, self.target_id)
         
 class follow(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
