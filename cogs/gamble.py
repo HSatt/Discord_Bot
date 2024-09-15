@@ -9,6 +9,8 @@ from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from cogs.diyembed import diyembed
+from cogs.utils.nosj import nosj
+
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 
@@ -19,9 +21,8 @@ table = {'😔': 5, '🤮': 15, '😡': 30, '🥲': 45, '😋': 80, '🐢': 1341
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 global bank_info
 bank_info = {}
-with open("data/bank_info.json", "r", encoding="utf-8") as f:
-# bank_info.jsonを開く(r)
-    bank_info = json.load(f) # dataにファイル(f)をjsonとしてロードしたものを入れる
+bank_info = nosj.load("data/bank_info.json")
+print(bank_info)
 print('Successfully loaded previous bank_info record!')
 
 # MAKE IT COGGY
