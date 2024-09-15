@@ -23,7 +23,7 @@ client = Client( # これが無いとTwitterにアクセスできない
                 user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36'
                 )
 # MAKE IT COGGY
-class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
+class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにすると良いぞ)(違っても良い)(好きにしな)
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -61,7 +61,7 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                     latest_tweet[screen_name] = temp_latest_tweet.created_at_datetime.timestamp()
                     for tweets in await client.get_user_tweets(handshake, 'Tweets'):
                         if before_tweet[screen_name] < tweets.created_at_datetime.timestamp():
-                            await self.callback(tweets)
+                            await self.callback(tweets, screen_name)
                         else:
                             break
                     before_tweet[screen_name] = latest_tweet[screen_name]
@@ -72,10 +72,21 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                     print(f'''Failed to fetch {screen_name}'s tweets: We're being ratelimited or the api is down.''')
             await asyncio.sleep(CHECK_INTERVAL)
 
-    async def callback(self, tweet: Tweet) -> None:
+    async def callback(self, tweet: Tweet, user_id) -> None:
         print(f'\033[1m>>>>> New tweet posted from @{screen_name}({handshake}) <<<<<\033[0m')
-        channel = self.bot.get_channel(Manage_Channel)
-        await channel.send(f'New tweet posted from {screen_name}({handshake}): https://fxtwitter.com/{handshake}/status/{tweet.id}')
+        with open("data/Server/channels.json", "r", encoding="utf-8") as f:
+            channels = json.load(f)
+            for key, channel_id in channels.items():
+                with open(f"data/Server/twitter_followed/{key}.json", "r", encoding="utf-8") as f:
+                    guild_followed = json.load(f)
+                for followed_id in guild_followed:
+                    print(followed_id)
+                    if followed_id == user_id:
+                        channel = self.bot.get_channel(channel_id)
+                        await channel.send(f'New tweet posted from {screen_name}({handshake}): https://fxtwitter.com/{handshake}/status/{tweet.id}')
+                    else:
+                        print('pass')
+                        pass
 
     async def get_latest_tweet(self, user_id: int) -> Tweet:
         tweets = await client.get_user_tweets(user_id, 'Tweets')
@@ -138,4 +149,4 @@ class tweet(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             await ctx.reply('The user you typed is not followed.')
         
 async def setup(bot: commands.Bot):
-    await bot.add_cog(tweet(bot))
+    await bot.add_cog(twitter(bot))

@@ -7,7 +7,7 @@ import asyncio
 import json
 from cogs.diyembed import diyembed
 from cogs.bluesky import bluesky
-from cogs.tweet import tweet
+from cogs.twitter import twitter
 from cogs.youtube import youtube
 # buttons
 class Follow_Bridge(View):
@@ -16,17 +16,17 @@ class Follow_Bridge(View):
         self.ctx = ctx
         self.target_id = target_id
 
-    @discord.ui.button(emoji="<:youtube:1284353556836778024>", label="Bluesky", style=discord.ButtonStyle.primary)
+    @discord.ui.button(emoji="<:bsky:1284434214510395442>", label="Bluesky", style=discord.ButtonStyle.green)
     async def bsky_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Bluesky上の{self.target_id}をフォローします…", ephemeral=True)
         await bluesky.bfollow(self, self.ctx, self.target_id)
     
-    @discord.ui.button(label="Twitter", style=discord.ButtonStyle.primary)
+    @discord.ui.button(emoji="<:twitter:1284435019917430835>", label="Twitter", style=discord.ButtonStyle.green)
     async def twitter_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Twitter上の{self.target_id}をフォローします…", ephemeral=True)
-        await tweet.follow(self, self.ctx, self.target_id)
+        await twitter.tfollow(self, self.ctx, self.target_id)
 
-    @discord.ui.button(label="Youtube", style=discord.ButtonStyle.primary)
+    @discord.ui.button(emoji="<:youtube:1284353556836778024>", label="Youtube", style=discord.ButtonStyle.green)
     async def youtube_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"Youtube上の{self.target_id}をフォローします…", ephemeral=True)
         self.target_id = await youtube.convert(self, self.ctx, self.target_id)
@@ -37,7 +37,7 @@ class follow(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def follows(self, ctx, target_id):
+    async def follow(self, ctx, target_id):
         view = Follow_Bridge(ctx, target_id)
         await ctx.reply(view=view, embed=await diyembed.getembed(self, title=f"""どのプラットフォームで"{target_id}"をフォローしますか？""", color=0x1084fd,))
 
