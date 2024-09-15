@@ -10,12 +10,13 @@ initial_extensions = (
     "cogs.random",
     "cogs.gamble",
     "cogs.youtube",
-    "cogs.tweet",
+    "cogs.twitter",
     "cogs.e",
     "cogs.diyembed",
     "cogs.hypixel",
     "cogs.voice",
-    "cogs.tag"
+    "cogs.tag",
+    "cogs.fbridge",
 )
 
 description = '''Hello.

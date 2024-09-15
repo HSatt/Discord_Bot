@@ -104,10 +104,10 @@ class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         try:
             await channel.send("This channel is now listening to events!")
             await ctx.reply("Added the channel!")
-            channels[ctx.guild.id] = int(channel_id)
+            channels[str(ctx.guild.id)] = int(channel_id)
             with open("data/Server/channels.json", "w+", encoding="utf-8") as f:
                 json.dump(channels, f)
-            with open(f"data/Server/followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
+            with open(f"data/Server/bsky_followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
                 json.dump({}, f)
         except discord.HTTPException:
             await ctx.reply("The channel ID you sent is invalid!")
@@ -115,6 +115,7 @@ class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         
     @commands.command()
     async def sex(self, ctx, message_id):
+        await ctx.message.delete()
         message = await ctx.fetch_message(int(message_id))
         await message.add_reaction("🇸")
         await message.add_reaction("🇪")

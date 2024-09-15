@@ -13,8 +13,6 @@ from httpx import InvalidURL
 import requests
 from bs4 import BeautifulSoup
 from cogs.diyembed import diyembed
-from cogs.bluesky import bluesky
-from cogs.tweet import tweet
 
 # チャンネル指定
 Manage_Channel = 1273134816308625439
