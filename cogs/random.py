@@ -115,8 +115,7 @@ class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         
     @commands.command()
     async def sex(self, ctx, message_id):
-        message = await ctx.fetch_message(int(ctx.message.id))
-        await message.delete()
+        await ctx.message.delete()
         message = await ctx.fetch_message(int(message_id))
         await message.add_reaction("🇸")
         await message.add_reaction("🇪")
