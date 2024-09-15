@@ -12,6 +12,7 @@ from typing import NoReturn
 from twikit import Client, Tweet
 from twikit.errors import ServerError
 from httpx import ReadTimeout
+import os
 # チャンネル指定
 
 Manage_Channel = 1273134816308625439
@@ -106,7 +107,8 @@ class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             print(tweets)
             tweets_list = tweets[order - 1]
             await ctx.reply(f'A tweet posted from {screen_name}({temp_user_id}): https://fxtwitter.com/{screen_name}/status/{tweets_list.id}')
-        except:
+        except Exception as e:
+            print(e)
             await ctx.reply('The user you typed is either suspended or misspelled.')
     
     async def save_before_tweet(self):
@@ -119,13 +121,28 @@ class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
     )
     async def tfollow(self, ctx, name: str):
         try:
-            user = await client.get_user_by_screen_name(name)
+            user = await client.get_user_by_screen_name(screen_name=name)
             temp_user_id = user.id
             followed[name] = temp_user_id
-            print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Succesfully followed {name}!')
-            await ctx.reply(f'Succesfully followed [{name}](https://x.com/{name})!')
             with open("data/tweet.json", "w+", encoding="utf-8") as f:
                 json.dump(followed, f)
+            print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Succesfully followed {name}!')
+            guild_twitter_followed = []
+            with open(f"data/Server/twitter_followed/{ctx.guild.id}.json", "r", encoding="utf-8") as f:
+                guild_twitter_followed = json.load(f)
+            print(guild_twitter_followed)
+            if not name in guild_twitter_followed:
+                guild_twitter_followed.append(name)
+                print(guild_twitter_followed)
+                with open(f"data/Server/twitter_followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
+                    json.dump(guild_twitter_followed, f)
+                await ctx.reply(f'Succesfully followed [{name}](https://x.com/{name})!')
+            else:
+                await ctx.reply(f'Already following {name}!')
+                print(f'Already following {name}!')
+            with open("data/tweet.json", "w+", encoding="utf-8") as f:
+                json.dump(followed, f)
+
             print(f'loading {name}({temp_user_id}) tweets...')
             # 過去のtweetをgetする
             temp_before_tweet = await self.get_latest_tweet(temp_user_id)
@@ -135,17 +152,37 @@ class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             print(e)
             await ctx.reply('The user you typed is either suspended or misspelled.')
     
-    @commands.command(
-        name="unfollow", # コマンドの名前。設定しない場合は関数名
-    )
-    async def unfollow(self, ctx, name: str):
+    @commands.command()
+    async def tunfollow(self, ctx, name: str):
         try:
-            del followed[name]
-            print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Succesfully unfollowed {name}!')
-            await ctx.reply(f'Succesfully unfollowed [{name}](https://x.com/{name})!')
-            with open("data/tweet.json", "w+", encoding="utf-8") as f:
-                json.dump(followed, f)
-        except:
+            with open(f"data/Server/twitter_followed/{ctx.guild.id}.json", "r", encoding="utf-8") as f:
+                guild_twitter_followed = json.load(f)
+            if name in guild_twitter_followed:
+                guild_twitter_followed.remove(name)
+                with open(f"data/Server/twitter_followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
+                    json.dump(guild_twitter_followed, f)
+                path = "data/Server/twitter_followed/"
+                count = 0
+                file_count = 0
+                for file in os.listdir(path):
+                    if file.endswith(".json"):
+                        file_count += 1
+                        with open(f"{path}{file}", "r", encoding="utf-8") as f:
+                            guild_twitter_followed = json.load(f)
+                        if not name in guild_twitter_followed:
+                            count += 1
+                if count == file_count:
+                    with open(f"data/tweet.json", "r", encoding="utf-8") as f:
+                        followed = json.load(f)
+                    del followed[name]
+                    with open("data/tweet.json", "w+", encoding="utf-8") as f:
+                        json.dump(followed, f)
+                print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] Succesfully unfollowed {name}!')
+                await ctx.reply(f'Succesfully unfollowed [{name}](https://x.com/{name})!')
+            else:
+                await ctx.reply(f'The user you typed is not followed.')
+        except Exception as e:
+            print(e)
             await ctx.reply('The user you typed is not followed.')
         
 async def setup(bot: commands.Bot):
