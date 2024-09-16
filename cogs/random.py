@@ -5,6 +5,7 @@ from atproto import Client # type: ignore
 import asyncio
 import json
 from cogs.diyembed import diyembed
+import diacriticize
 # target list
 fucked = []
 items = [
@@ -120,6 +121,11 @@ class random(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
         await message.add_reaction("🇸")
         await message.add_reaction("🇪")
         await message.add_reaction("🇽")
+    
+    @commands.command()
+    async def zalgo(self, ctx, *, text):
+        text = diacriticize.diacriticize(text)
+        await ctx.reply(text)
 
 async def setup(bot: commands.Bot): 
     await bot.add_cog(random(bot))

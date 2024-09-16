@@ -13,6 +13,7 @@ from httpx import InvalidURL
 import requests
 from bs4 import BeautifulSoup
 from cogs.diyembed import diyembed
+from cogs.utils.nosj import nosj
 
 # チャンネル指定
 Manage_Channel = 1273134816308625439
@@ -40,8 +41,13 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         async def listener(video: Video):
             print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
             print(video)
-            channel = self.bot.get_channel(Manage_Channel)
-            await channel.send(f"New video from {video.channel.name}: {video.title}({video.url})")
+            channels = nosj.load("data/Server/channels.json")
+            for guild_id, channel in channels.items():
+                guild_followed = nosj.load(f"data/Server/youtube_followed/{guild_id}.json")
+                for followed in guild_followed:
+                    if followed == video.channel.id:
+                        channel = self.bot.get_channel(channel)
+                        await channel.send(f"New video from {video.channel.name}: {video.title}({video.url})")
 
     # 起動時
     @commands.Cog.listener()
