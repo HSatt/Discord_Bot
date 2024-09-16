@@ -145,7 +145,7 @@ class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
 
             print(f'loading {name}({temp_user_id}) tweets...')
             # 過去のtweetをgetする
-            temp_before_tweet = await self.get_latest_tweet(temp_user_id)
+            temp_before_tweet = await twitter.get_latest_tweet(temp_user_id)
             before_tweet[name] = temp_before_tweet.created_at_datetime.timestamp()
             print(f'\033[1m>>>>> {before_tweet} <<<<<\033[0m')
         except Exception as e:
