@@ -7,9 +7,10 @@ import asyncio
 import json
 import requests
 from bs4 import BeautifulSoup
+import math
 from cogs.diyembed import diyembed
 
-weather_irons = {'晴': '<:weather_01:1285278839018098800>', 
+weather_icons = {'晴': '<:weather_01:1285278839018098800>', 
                  '晴一時曇': '<:weather_02:1285278840809324555>', 
                  '晴一時雨': '<:weather_03:1285278842440650833>', 
                  '晴一時雪': '<:weather_04:1285278844072362056>', 
@@ -53,20 +54,35 @@ weather_irons = {'晴': '<:weather_01:1285278839018098800>',
                  '雪か雨': '<:weather_42:1285278902045900821>', 
                  '雪か雨のち晴': '<:weather_43:1285278903757443143>', 
                  '雪か雨のち曇': '<:weather_44:1285278905380503582>'}
+
+onehour_icons = {"晴れ": "<:weather_01:1285992876647645195>", # あとで見つける
+                 "曇り": "<:weather_02:1285992877956141117>",
+                 "不明1":"<:weather_03:1285992879717875745>",
+                 "不明2":"<:weather_04:1285992881655644191>",
+                 "不明3":"<:weather_05:1285992883224055852>",
+                 "不明4":"<:weather_06:1285992884662829167>",
+                 "不明5":"<:weather_07:1285992886160064542>",
+                 "不明6":"<:weather_08:1285992887548514471>",
+                 "小雨":"<:weather_09:1285992889460985918>",
+                 "弱雨":"<:weather_10:1285992891658797148>",
+                 "雨":"<:weather_11:1285992893320007711>",
+                 "強雨":"<:weather_12:1285992894494281791>",
+                 "暴風雨":"<:weather_13:1285992899779235850>",
+                }
+
 # MAKE IT COGGY
 class weather(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.command()
-    async def weather(self, ctx, pref, region):
+    async def get_region_link(self, ctx, pref, region):
         tenki_url = 'https://tenki.jp/'
         response = requests.get(tenki_url)
 
         # BeautifulSoupオブジェクトを作成
         soup = BeautifulSoup(response.content, 'lxml')
 
-        # クラス名 'forecast-entry-13116' を持つ要素を検索
+        # クラス名を持つ要素を検索
         forecast_entry = soup.find("a", string=pref)
         if forecast_entry:
             pref_link = f"https://tenki.jp{forecast_entry.get("href")}"
@@ -83,17 +99,20 @@ class weather(commands.Cog):
         # BeautifulSoupオブジェクトを作成
         soup = BeautifulSoup(response.content, 'lxml')
 
-        # クラス名 'forecast-entry-13116' を持つ要素を検索
+        # クラス名を持つ要素を検索
         forecast_entry = soup.find("a", string=region)
         if forecast_entry:
             region_link = f"https://tenki.jp{forecast_entry.get("href")}"
             print(region_link)
+            return region_link
         else:
             await ctx.reply("go tenki jp idiot")
             print("go tenki jp idiot")
             raise Exception("go tenki jp idiot")
 
-        url = region_link
+    @commands.command()
+    async def weather(self, ctx, pref, region):
+        url = await self.get_region_link(ctx, pref, region)
         response = requests.get(url)
 
         # BeautifulSoupオブジェクトを作成
@@ -135,7 +154,7 @@ class weather(commands.Cog):
             print(weather_telop)
             weathers = []
             for weather in weather_telop:
-                weathers.append(weather_irons[weather.get_text()] + " " + weather.get_text())
+                weathers.append(f"{weather_icons[weather.get_text()]}({weather.get_text()})")
             for item in tag:
                 desc += item
                 if item in ("┣最高気温", "┗最低気温"):
@@ -149,5 +168,48 @@ class weather(commands.Cog):
             print("go tenki jp idiot")
             raise Exception("go tenki jp idiot")
         
+    @commands.command()
+    async def hours(self, ctx, pref, region):
+        base_url = await self.get_region_link(ctx, pref, region)
+        url = base_url + "1hour.html"
+        response = requests.get(base_url)
+        # BeautifulSoupオブジェクトを作成
+        soup = BeautifulSoup(response.content, 'lxml')
+        max_min_temp = soup.find_all("dd", class_="high-temp temp")
+        print(max_min_temp)
+        response = requests.get(url)
+        soup = BeautifulSoup(response.content, 'lxml')
+        forecast_entries = soup.find("table", id="forecast-point-1h-today") 
+        weather_entries = forecast_entries.find("tr", class_="weather")
+        weather_entries = weather_entries.find_all("td")
+        temp_entries = forecast_entries.find("tr", class_="temperature")
+        temp_entries = temp_entries.find_all("td")
+        precip_entries = forecast_entries.find("tr", class_="precipitation")
+        precip_entries = precip_entries.find_all("td")
+        if forecast_entries:
+            print(weather_entries)
+            desc = "- 天気 | 気温(°C) | 降水量(mm/h)\n"
+            max_temp = False
+            for i in range(1, 25):
+                print(f"{weather_entries[i-1].get_text()} | {temp_entries[i-1].get_text()} | {precip_entries[i-1].get_text()}")
+                if i != 24:
+                    desc += "┣"
+                else:
+                    desc += "┗"
+                desc += f"{i}時: {onehour_icons[weather_entries[i-1].get_text()]}({weather_entries[i-1].get_text()}) | "
+                if int(max_min_temp[0].get_text().replace("℃", "")) == int(round(float(temp_entries[i-1].get_text()))):
+                    desc += f" 🔺**{temp_entries[i-1].get_text()}°C** | "
+                else:
+                    desc += f"{temp_entries[i-1].get_text()}°C | "
+                if precip_entries[i-1].get_text() == "0":
+                    desc += "0mm\n"
+                elif int(precip_entries[i-1].get_text()) > 5:
+                    desc += f"❗***{precip_entries[i-1].get_text()}mm***❗\n"
+                else:
+                    desc += f"**{precip_entries[i-1].get_text()}mm**\n"
+            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{pref}/{region}の1時間天気""", description=f"""{desc}""", color=0x1084fd))
+        else:
+            print("go tenki jp idiot")
+
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(weather(bot))
