@@ -11,6 +11,9 @@ import math
 import asyncio
 import os
 import random
+import requests
+from cogs.utils.nosj import nosj
+from bs4 import BeautifulSoup
 
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
@@ -61,6 +64,18 @@ class MyView(View):
         with open(f"data/voice/result/search.json", "w+", encoding="utf-8") as f:
             json.dump(raw_result, f)
         wait_search.set()
+
+class get_lyric(View):
+    def __init__(self, ctx, query):
+        super().__init__()
+        self.ctx = ctx
+        self.query = query
+
+    @discord.ui.button(label="歌詞", style=discord.ButtonStyle.primary)
+    async def lyric_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("歌詞を取得します…", ephemeral=True)
+        await voice.lyric(self, self.ctx, self.query)
+
 
 class voice(commands.Cog):
     def __init__(self, bot):
@@ -320,7 +335,10 @@ class voice(commands.Cog):
             path_len = len(npath)
         try:
             if ctx.voice_client.is_playing():
-                await ctx.send(embed=await diyembed.getembed(self, title=f"""再生中…""", color=0x1084fd, 
+                now_playing_title = now_playing.split(".")[0]
+                now_playing_title = now_playing_title.split("_")[0]
+                view = get_lyric(ctx, query=now_playing_title.split("/")[-1])
+                await ctx.send(view=view, embed=await diyembed.getembed(self, title=f"""再生中…""", color=0x1084fd, 
                                                         description=f"{now_playing[path_len:]}, {round(await voice.length(self, query=str(now_playing)), 3)}s", 
                                                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
                                                         author_icon=zunda, thumbnail=disc,
@@ -393,6 +411,44 @@ class voice(commands.Cog):
         await ctx.reply('Queue shuffled!')
         await self.getq(ctx)
 
+    @commands.command()
+    async def lyric(self, ctx, query):
+        bearer_token = nosj.load("data/!important/genius_token.json")
+
+        headers = {"Authorization": f"Bearer {bearer_token}"}
+
+        response = requests.get(f"https://api.genius.com/search?q={query}", headers=headers)
+        try:
+            url = f"https://genius.com/{response.json()["response"]["hits"][0]["result"]["path"]}"
+        except IndexError:
+            await ctx.reply("No results found!")
+            raise Exception("No results found!")
+        print(url)
+        response = requests.get(url)
+
+        soup = BeautifulSoup(response.content, 'lxml')
+        lyrics = soup.select("#lyrics-root > div.Lyrics__Container-sc-1ynbvzw-1.kUgSbL")
+        lyric_text = ""
+        for lyric in lyrics:
+            lyric_text += lyric.prettify()
+        lyric_text = lyric_text.split("\n")
+        print(lyric_text)
+        result = ""
+        for item in lyric_text:
+            print(item)
+            if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
+                pass
+            elif "<br/>" in item:
+                result += "\n"
+            elif "<b>" in item or "</b>" in item:
+                result += "**"
+            else:
+                result += item
+        try:
+            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{query}の歌詞""", description=f"""{result}""", color=0x1084fd))
+        except discord.HTTPException:
+            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+    
     @commands.Cog.listener()
     async def on_ready(self):
         await self.rel()
