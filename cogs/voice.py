@@ -412,7 +412,7 @@ class voice(commands.Cog):
         await self.getq(ctx)
 
     @commands.command()
-    async def lyric(self, ctx, query):
+    async def lyric(self, ctx, *, query):
         bearer_token = nosj.load("data/!important/genius_token.json")
 
         headers = {"Authorization": f"Bearer {bearer_token}"}
@@ -434,16 +434,24 @@ class voice(commands.Cog):
         lyric_text = lyric_text.split("\n")
         print(lyric_text)
         result = ""
+        red = False
         for item in lyric_text:
             print(item)
             if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
                 pass
+            elif '<a class="ReferentFragmentdesktop' in item or '<span' in item or '</span>' in item or '</a>' in item:
+                pass
             elif "<br/>" in item:
                 result += "\n"
             elif "<b>" in item or "</b>" in item:
-                result += "**"
+                if red != True:
+                    red = True
+                    result += "**"
+                else:
+                    pass
             else:
                 result += item
+                red = False
         try:
             await ctx.reply(embed=await diyembed.getembed(self, title=f"""{query}の歌詞""", description=f"""{result}""", color=0x1084fd))
         except discord.HTTPException:
