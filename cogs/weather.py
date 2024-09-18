@@ -9,6 +9,50 @@ import requests
 from bs4 import BeautifulSoup
 from cogs.diyembed import diyembed
 
+weather_irons = {'晴': '<:weather_01:1285278839018098800>', 
+                 '晴一時曇': '<:weather_02:1285278840809324555>', 
+                 '晴一時雨': '<:weather_03:1285278842440650833>', 
+                 '晴一時雪': '<:weather_04:1285278844072362056>', 
+                 '晴のち曇': '<:weather_05:1285278845825450025>', 
+                 '晴のち雨': '<:weather_06:1285278847239192690>', 
+                 '晴の ち雪': '<:weather_07:1285278848681906287>', 
+                 '曇': '<:weather_08:1285278850175074304>', 
+                 '曇一時晴': '<:weather_09:1285278851525644351>', 
+                 '曇一時雨': '<:weather_10:1285278853081595979>', 
+                 '曇一時雪': '<:weather_11:1285278854780420167>', 
+                 '曇のち晴': '<:weather_12:1285278856806268998>', 
+                 '曇のち雨': '<:weather_13:1285278858014101627>', 
+                 '曇のち雪': '<:weather_14:1285278859604000809>', 
+                 '雨': '<:weather_15:1285278860681806020>', 
+                 '雨一時晴': '<:weather_16:1285278862531493940>', 
+                 '雨時々曇': '<:weather_17:1285278863739326506>', 
+                 '雨一時雪': '<:weather_18:1285278865522032650>', 
+                 '雨のち晴': '<:weather_19:1285278866503368787>', 
+                 '雨のち曇': '<:weather_20:1285278868718096516>', 
+                 '雨のち雪': '<:weather_21:1285278870542749808>', 
+                 '暴風雨': '<:weather_22:1285278871926738986>', 
+                 '雪': '<:weather_23:1285278873013063736>', 
+                 '雪一時晴': '<:weather_24:1285278874728534169>', 
+                 '雪一時曇': '<:weather_25:1285278876464975993>', 
+                 '雪一時雨': '<:weather_26:1285278877630861413>', 
+                 '雪のち晴': '<:weather_27:1285278879178686667>', 
+                 '雪のち曇': '<:weather_28:1285278880323731497>', 
+                 '雪のち雨': '<:weather_29:1285278882018099221>', 
+                 '暴風雪': '<:weather_30:1285278883389771910>', 
+                 '晴一時雨か雪': '<:weather_31:1285278884756979792>', 
+                 '晴一時雪か雨': '<:weather_32:1285278886426447882>', 
+                 '晴のち雨か雪': '<:weather_33:1285278887940460644>', 
+                 '晴のち雪か雨': '<:weather_34:1285278889391947841>', 
+                 '曇一時雨か雪': '<:weather_35:1285278890977136792>', 
+                 '曇一時雪か雨': '<:weather_36:1285278892428624007>', 
+                 '曇のち雨か雪': '<:weather_37:1285278893879591043>', 
+                 '曇のち雪か雨': '<:weather_38:1285278895452586136>', 
+                 '雨か雪': '<:weather_39:1285278896815738890>', 
+                 '雨か雪 のち晴': '<:weather_40:1285278898246123650>', 
+                 '雨か雪のち曇': '<:weather_41:1285278899823050794>', 
+                 '雪か雨': '<:weather_42:1285278902045900821>', 
+                 '雪か雨のち晴': '<:weather_43:1285278903757443143>', 
+                 '雪か雨のち曇': '<:weather_44:1285278905380503582>'}
 # MAKE IT COGGY
 class weather(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -91,7 +135,7 @@ class weather(commands.Cog):
             print(weather_telop)
             weathers = []
             for weather in weather_telop:
-                weathers.append(weather.get_text())
+                weathers.append(weather_irons[weather.get_text()] + " " + weather.get_text())
             for item in tag:
                 desc += item
                 if item in ("┣最高気温", "┗最低気温"):
@@ -99,7 +143,7 @@ class weather(commands.Cog):
                 elif item in ("- 今日の気象情報", "- 明日の気象情報"):
                     desc += ": " + weathers.pop(0)
                 desc += "\n"
-            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{pref}/{region}の天気""", description=f"""{desc}""", color=0x1084fd,))
+            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{pref}/{region}の天気""", description=f"""{desc}""", color=0x1084fd))
         else:
             await ctx.reply("go tenki jp idiot")
             print("go tenki jp idiot")
