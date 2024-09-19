@@ -1,13 +1,14 @@
+import asyncio
+import datetime
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
-import random
-from atproto import Client # type: ignore
-import asyncio
 import json
-import requests
-from bs4 import BeautifulSoup
 import math
+import random
+import requests
+from atproto import Client  # type: ignore
+from bs4 import BeautifulSoup
 from cogs.diyembed import diyembed
 
 weather_icons = {'晴': '<:weather_01:1285278839018098800>', 
@@ -196,7 +197,11 @@ class weather(commands.Cog):
                     desc += "┣"
                 else:
                     desc += "┗"
-                desc += f"{i}時: {onehour_icons[weather_entries[i-1].get_text()]}({weather_entries[i-1].get_text()}) | "
+                if str(i) == datetime.datetime.now().strftime("%H"):
+                    desc += f"**➺{i}時**: "
+                else:
+                    desc += f"{i}時: "
+                desc += f"{onehour_icons[weather_entries[i-1].get_text()]}({weather_entries[i-1].get_text()}) | "
                 if int(max_min_temp[0].get_text().replace("℃", "")) == int(round(float(temp_entries[i-1].get_text()))):
                     desc += f" 🔺**{temp_entries[i-1].get_text()}°C** | "
                 else:
