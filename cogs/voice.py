@@ -74,7 +74,7 @@ class get_lyric(View):
     @discord.ui.button(label="歌詞", style=discord.ButtonStyle.primary)
     async def lyric_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("歌詞を取得します…", ephemeral=True)
-        await voice.lyric(self, self.ctx, self.query)
+        await voice.fetch_lyric(self=self, ctx=self.ctx, query=self.query)
 
 
 class voice(commands.Cog):
@@ -335,7 +335,7 @@ class voice(commands.Cog):
             path_len = len(npath)
         try:
             if ctx.voice_client.is_playing():
-                now_playing_title = now_playing.split(".")[0]
+                now_playing_title = now_playing.replace(".flac", "").replace(".mp3", "")
                 now_playing_title = now_playing_title.split("_")[0]
                 view = get_lyric(ctx, query=now_playing_title.split("/")[-1])
                 await ctx.send(view=view, embed=await diyembed.getembed(self, title=f"""再生中…""", color=0x1084fd, 
@@ -413,6 +413,9 @@ class voice(commands.Cog):
 
     @commands.command()
     async def lyric(self, ctx, *, query):
+        self.fetch_lyric(ctx, query)
+
+    async def fetch_lyric(self, ctx, query):
         bearer_token = nosj.load("data/!important/genius_token.json")
 
         headers = {"Authorization": f"Bearer {bearer_token}"}
