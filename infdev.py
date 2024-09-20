@@ -17,6 +17,7 @@ initial_extensions = (
     "cogs.voice",
     "cogs.tag",
     "cogs.fbridge",
+    "cogs.schedule"
 )
 
 description = '''Hello.
