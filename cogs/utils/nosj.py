@@ -14,7 +14,7 @@ class nosj(commands.Cog):
     
     @staticmethod
     def save(target, file):
-        with open(file, "r", encoding="utf-8") as f:
+        with open(file, "w+", encoding="utf-8") as f:
             json.dump(target, f)
         print("dumped")
        
