@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from discord.ui import Button, View
 import random
-import datetime
 from atproto import Client # type: ignore
 import time
 import asyncio
@@ -14,7 +13,11 @@ import requests
 from bs4 import BeautifulSoup
 from cogs.utils.diyembed import diyembed
 from cogs.utils.nosj import nosj
-
+from cogs.schedule import schedule
+import re
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import timedelta
+import datetime
 # チャンネル指定
 Manage_Channel = 1273134816308625439
 
@@ -42,17 +45,43 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] \033[1m !!New Post Detected!! \033[0m')
             print(video)
             channels = nosj.load("data/Server/channels.json")
-            for guild_id, channel in channels.items():
+            response = requests.get(video.url)
+            soup = BeautifulSoup(response.text, features="lxml")
+            try:
+                youtube_str = soup.find("script", string=re.compile("scheduledStartTime")).get_text().replace("var ytInitialPlayerResponse = ", "")
+                youtube_list = youtube_str.split('"')
+                for item in youtube_list:
+                    if "scheduledStartTime" in item:
+                        start_time = youtube_list[youtube_list.index(item) + 2]
+                        print(f"Live starting at {datetime.datetime.fromtimestamp(int(start_time))}")
+                        start_time = datetime.datetime.fromtimestamp(int(start_time)) - timedelta(minutes=5)
+                        break
+            except AttributeError:
+                start_time = None
+                return
+            for guild_id, channel_id in channels.items():
                 guild_followed = nosj.load(f"data/Server/youtube_followed/{guild_id}.json")
                 for followed in guild_followed:
                     if followed == video.channel.id:
-                        channel = self.bot.get_channel(channel)
+                        channel = self.bot.get_channel(channel_id)
                         await channel.send(f"New video from {video.channel.name}: {video.title}({video.url})")
+                        if start_time is not None:
+                            scheduler = AsyncIOScheduler()
+                            scheduler.add_job(self.starting_notification, 'date', run_date=start_time, args=[video.channel.name, video.title, video.url, channel_id])
+                            scheduler.start()
+                            print(f"Starting notification for {video.channel.name} @ {start_time}")
+
+    async def starting_notification(self, channel_name, video_title, video_url, channel_id):
+        print(f"Sending notification for {channel_name} @ {datetime.datetime.now()}")
+        channel = self.bot.get_channel(int(channel_id))
+        await channel.send(embed=await diyembed.getembed(title=f"{channel_name} is going live!",
+                                                         title_url=video_url,
+                                                         description=f"{video_title} is starting now!",
+                                                         color=0xff0000))
 
     # 起動時
     @commands.Cog.listener()
     async def on_ready(self):
-        global bsky_embed
         for channel in subscribed:
             await self.notifier.subscribe(channel)  # Channel ID of Satt
         await self.notifier.serve() # Youtube君をスクレイピングする(ガチ)
