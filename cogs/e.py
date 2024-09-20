@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 import random
 
 strategies = {
@@ -140,7 +140,7 @@ class E(commands.Cog):
         view = MyView()
         global message
         
-        message = await ctx.reply(embed=await diyembed.getembed(self, title='Play Among us now!', description='''"Among Us" is a multiplayer online game where players work together on a spaceship to complete tasks, 
+        message = await ctx.reply(embed=await diyembed.getembed(title='Play Among us now!', description='''"Among Us" is a multiplayer online game where players work together on a spaceship to complete tasks, 
                     but some are impostors trying to sabotage and eliminate the crew. Players must identify and vote out the impostors while impostors deceive and eliminate 
                     crew members without being caught. It's known for its social deduction gameplay.''', 
                     title_url='https://among.us', author_name='Among Us Promotion', author_url='https://among.us',

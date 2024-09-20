@@ -5,7 +5,7 @@ import random
 from atproto import Client # type: ignore
 import asyncio
 import json
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 from cogs.bluesky import bluesky
 from cogs.twitter import twitter
 from cogs.youtube import youtube
@@ -39,7 +39,7 @@ class follow(commands.Cog):
     @commands.command()
     async def follow(self, ctx, target_id):
         view = Follow_Bridge(ctx, target_id)
-        await ctx.reply(view=view, embed=await diyembed.getembed(self, title=f"""どのプラットフォームで"{target_id}"をフォローしますか？""", color=0x1084fd,))
+        await ctx.reply(view=view, embed=await diyembed.getembed(title=f"""どのプラットフォームで"{target_id}"をフォローしますか？""", color=0x1084fd,))
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(follow(bot))

@@ -9,7 +9,7 @@ from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from atproto_client.exceptions import BadRequestError
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 
 # チャンネル指定
 Manage_Channel = 1273134816308625439
@@ -58,7 +58,7 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
                 self.image_red = True
             return
         finally:
-            self.bsky_embed = diyembed.getembed(self, title = f"Latest Post from {id}", color=0x1084fd, 
+            self.bsky_embed = diyembed.getembed(title = f"Latest Post from {id}", color=0x1084fd, 
                                                     description=bsky_client.get_author_feed(id).feed[num].post.record.text, 
                                                     title_url=f'https://bsky.app/profile/{id}/post/{useless[-1]}', 
                                                     author_name='BlueskyストーカーBot', author_url="https://satt.carrd.co/",

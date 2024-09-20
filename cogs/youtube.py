@@ -12,7 +12,7 @@ import json
 from httpx import InvalidURL
 import requests
 from bs4 import BeautifulSoup
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 from cogs.utils.nosj import nosj
 
 # チャンネル指定

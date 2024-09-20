@@ -4,7 +4,7 @@ from discord.ui import Button, View
 import json
 import requests
 import datetime
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 import base64
 import urllib.request
 def getInfo(call):
@@ -33,7 +33,7 @@ class MyView(View):
         zom_page += 1
         if zom_page > 4:
             zom_page = 0
-        await interaction.response.edit_message(embed=await diyembed.getembed(self, title=f"{title} / Page {zom_page + 1}",
+        await interaction.response.edit_message(embed=await diyembed.getembed(title=f"{title} / Page {zom_page + 1}",
                                             description=f"{zom_response[zom_page]}",
                                             author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                             footer_text="Pasted by Satt", footer_icon=zunda), view=view)
@@ -45,7 +45,7 @@ class MyView(View):
         zom_page += 1
         if zom_page > 4:
             zom_page = 0
-        await interaction.response.edit_message(embed=await diyembed.getembed(self, title=f"{title} / Page {zom_page + 1}",
+        await interaction.response.edit_message(embed=await diyembed.getembed(title=f"{title} / Page {zom_page + 1}",
                                             description=f"{zom_response[zom_page]}",
                                             author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                             footer_text="Pasted by Satt", footer_icon=zunda), view=view)
@@ -150,7 +150,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
             except KeyError:
                 desc += "0"
         file = discord.File("data/head.png", filename="temp.png")
-        await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{hypixel_data["player"]["displayname"]}'s stats in Sheep Wars 🐑⚔️",
+        await ctx.reply(file=file, embed=await diyembed.getembed(title=f"{hypixel_data["player"]["displayname"]}'s stats in Sheep Wars 🐑⚔️",
                                           description=f"{desc}\n\n **-** **Default Kit:** {hypixel_data["player"]["stats"]["WoolGames"]["sheep_wars"]["default_kit"].title()}",
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda))
@@ -269,7 +269,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         title = f"{hypixel_data["player"]["displayname"]}'s stats in Zombies 🧟‍♀️⚔️"
         global message
         file = discord.File("data/head.png", filename="temp.png")
-        message = await ctx.reply(file=file, embed=await diyembed.getembed(self, title=f"{title} / Page 1",
+        message = await ctx.reply(file=file, embed=await diyembed.getembed(title=f"{title} / Page 1",
                                           description=f"{zom_response[zom_page]}",
                                           author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail="attachment://temp.png", image='',
                                           footer_text="Pasted by Satt", footer_icon=zunda), view=view)
@@ -306,7 +306,7 @@ class hypixel(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
         await hypixel.editing(self, view=view)
 
     async def editing(self, view):
-        await message.edit(embed=await diyembed.getembed(self, title=f"{title} / Page {zom_page + 1}",
+        await message.edit(embed=await diyembed.getembed(title=f"{title} / Page {zom_page + 1}",
                                             description=f"{zom_response[zom_page]}",
                                             author_name='Hypixel API grabber', author_url='https://satt.carrd.co/',author_icon=zunda, thumbnail='', image='',
                                             footer_text="Pasted by Satt", footer_icon=zunda), view=view)

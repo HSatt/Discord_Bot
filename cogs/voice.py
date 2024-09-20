@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 from discord.ui import Button, View
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 from mutagen.mp3 import MP3
 from mutagen.flac import FLAC
 from mutagen.mp3 import HeaderNotFoundError
@@ -29,6 +29,52 @@ Manage_Channel = 1273134816308625439
 path = "data/sounds"
 cpath = "C://Users/hatos/Music"
 npath = "./data/sana"
+
+async def fetch_lyric(ctx, query):
+        bearer_token = nosj.load("data/!important/genius_token.json")
+
+        headers = {"Authorization": f"Bearer {bearer_token}"}
+
+        response = requests.get(f"https://api.genius.com/search?q={query}", headers=headers)
+        try:
+            url = f"https://genius.com/{response.json()["response"]["hits"][0]["result"]["path"]}"
+        except IndexError:
+            await ctx.reply("No results found!")
+            raise Exception("No results found!")
+        print(url)
+        response = requests.get(url)
+
+        soup = BeautifulSoup(response.content, 'lxml')
+        lyrics = soup.select("#lyrics-root > div.Lyrics__Container-sc-1ynbvzw-1.kUgSbL")
+        lyric_text = ""
+        for lyric in lyrics:
+            lyric_text += lyric.prettify()
+        lyric_text = lyric_text.split("\n")
+        print(lyric_text)
+        result = ""
+        red = False
+        for item in lyric_text:
+            print(item)
+            if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
+                pass
+            elif '<a class="ReferentFragmentdesktop' in item or '<span' in item or '</span>' in item or '</a>' in item:
+                pass
+            elif "<br/>" in item:
+                result += "\n"
+            elif "<b>" in item or "</b>" in item:
+                if red != True:
+                    red = True
+                    result += "**"
+                else:
+                    pass
+            else:
+                result += item
+                red = False
+        try:
+            await ctx.reply(embed=await diyembed.getembed(title=f"""{query}の歌詞""", description=f"""{result}""", color=0x1084fd))
+        except discord.HTTPException:
+            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+
 # buttons
 class MyView(View):
     def __init__(self, ctx, query):
@@ -74,7 +120,7 @@ class get_lyric(View):
     @discord.ui.button(label="歌詞", style=discord.ButtonStyle.primary)
     async def lyric_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("歌詞を取得します…", ephemeral=True)
-        await voice.fetch_lyric(self=self, ctx=self.ctx, query=self.query)
+        await fetch_lyric(ctx=self.ctx, query=self.query)
 
 
 class voice(commands.Cog):
@@ -215,7 +261,7 @@ class voice(commands.Cog):
         with open(f"data/voice/result/search.json", "r", encoding="utf-8") as f:
             result = json.load(f)
         if not result:
-            await ctx.reply(embed=await diyembed.getembed(self, color=0x1084fd, 
+            await ctx.reply(embed=await diyembed.getembed(color=0x1084fd, 
                                                     description=f"検索結果が見つからなかったか、検索が中止されました。", 
                                                     author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
                                                     author_icon=zunda, thumbnail=zunda, footer_text="Pasted by Satt", footer_icon=zunda
@@ -247,7 +293,7 @@ class voice(commands.Cog):
     @commands.command()
     async def search(self, ctx, query=''):
         view = MyView(ctx, query)
-        return await ctx.reply(view=view, embed=await diyembed.getembed(self, title=f"""どのライブラリで"{query}"を検索しますか？""", color=0x1084fd,))
+        return await ctx.reply(view=view, embed=await diyembed.getembed(title=f"""どのライブラリで"{query}"を検索しますか？""", color=0x1084fd,))
 
     async def fetch(self, ctx, voices, query='', pre_path=''):
         query = query.lower()
@@ -289,7 +335,7 @@ class voice(commands.Cog):
                 result += f'**┗**{directory.split('/')[1]}\n'
         
         try:
-            await ctx.reply(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
+            await ctx.reply(embed=await diyembed.getembed(title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail=zunda,
                         footer_text="Pasted by Satt", footer_icon=zunda))
         except discord.HTTPException:
@@ -300,11 +346,11 @@ class voice(commands.Cog):
                 for check in range(500):
                     if str(result[3500 * (i + 1) + check:3500 * (i + 1) + check + 1]) == str("\n"):
                         if first == True:
-                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
+                            await ctx.send(embed=await diyembed.getembed(color=0x1084fd,
                                                                          description=result[3500 * (i) + prev_check:3500 * (i + 1) + check],  
                                                                             ))
                         if first == False:
-                            await ctx.send(embed=await diyembed.getembed(self, title=f"""You searched for "{query}"...""", color=0x1084fd, 
+                            await ctx.send(embed=await diyembed.getembed(title=f"""You searched for "{query}"...""", color=0x1084fd, 
                                                                             description=result[:3500 + check], 
                                                                             author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
                                                                             author_icon=zunda, thumbnail=zunda,
@@ -312,7 +358,7 @@ class voice(commands.Cog):
                             first = True
                         prev_check = check
                         break
-            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+            await ctx.send(embed=await diyembed.getembed(color=0x1084fd, 
                                                                       description=result[3500 * (i + 1) + check:],
                                                                       footer_text="Pasted by Satt", footer_icon=zunda))
         for item in raw_result:
@@ -338,13 +384,13 @@ class voice(commands.Cog):
                 now_playing_title = now_playing.replace(".flac", "").replace(".mp3", "")
                 now_playing_title = now_playing_title.split("_")[0]
                 view = get_lyric(ctx, query=now_playing_title.split("/")[-1])
-                await ctx.send(view=view, embed=await diyembed.getembed(self, title=f"""再生中…""", color=0x1084fd, 
+                await ctx.send(view=view, embed=await diyembed.getembed(title=f"""再生中…""", color=0x1084fd, 
                                                         description=f"{now_playing[path_len:]}, {round(await voice.length(self, query=str(now_playing)), 3)}s", 
                                                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
                                                         author_icon=zunda, thumbnail=disc,
                                                         ))
         except AttributeError:
-            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+            await ctx.send(embed=await diyembed.getembed(color=0x1084fd, 
                                                     title=f"何も再生されていません。", 
                                                     author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
                                                     author_icon=zunda, thumbnail=disc, footer_text="Pasted by Satt", footer_icon=zunda
@@ -379,7 +425,7 @@ class voice(commands.Cog):
             path_len = await self.pathlen(raw_item)
             reciept += f'- {raw_item[path_len:]}\n'
         try:
-            await ctx.reply(embed=await diyembed.getembed(self, title="Queue", color=0x1084fd, description=f"{reciept}",))
+            await ctx.reply(embed=await diyembed.getembed(title="Queue", color=0x1084fd, description=f"{reciept}",))
         except discord.HTTPException:
             await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(reciept)}mです！")
             print(f"this result contains: {len(reciept)} characters")
@@ -389,11 +435,11 @@ class voice(commands.Cog):
                     if str(reciept[3500 * (i + 1) + check]) == str("-"):
                         check -= 1
                         if first == True:
-                            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd,
+                            await ctx.send(embed=await diyembed.getembed(color=0x1084fd,
                                                                          description=reciept[3500 * (i) + prev_check:3500 * (i + 1) + check],  
                                                                             ))
                         if first == False:
-                            await ctx.send(embed=await diyembed.getembed(self, title=f"Queue", color=0x1084fd, 
+                            await ctx.send(embed=await diyembed.getembed(title=f"Queue", color=0x1084fd, 
                                                                             description=reciept[:3500 + check], 
                                                                             author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
                                                                             author_icon=zunda, thumbnail=zunda,
@@ -401,7 +447,7 @@ class voice(commands.Cog):
                             first = True
                         prev_check = check
                         break
-            await ctx.send(embed=await diyembed.getembed(self, color=0x1084fd, 
+            await ctx.send(embed=await diyembed.getembed(color=0x1084fd, 
                                                                       description=reciept[3500 * (i + 1) + check:],
                                                                       footer_text="Pasted by Satt", footer_icon=zunda))
             
@@ -413,52 +459,7 @@ class voice(commands.Cog):
 
     @commands.command()
     async def lyric(self, ctx, *, query):
-        self.fetch_lyric(ctx, query)
-
-    async def fetch_lyric(self, ctx, query):
-        bearer_token = nosj.load("data/!important/genius_token.json")
-
-        headers = {"Authorization": f"Bearer {bearer_token}"}
-
-        response = requests.get(f"https://api.genius.com/search?q={query}", headers=headers)
-        try:
-            url = f"https://genius.com/{response.json()["response"]["hits"][0]["result"]["path"]}"
-        except IndexError:
-            await ctx.reply("No results found!")
-            raise Exception("No results found!")
-        print(url)
-        response = requests.get(url)
-
-        soup = BeautifulSoup(response.content, 'lxml')
-        lyrics = soup.select("#lyrics-root > div.Lyrics__Container-sc-1ynbvzw-1.kUgSbL")
-        lyric_text = ""
-        for lyric in lyrics:
-            lyric_text += lyric.prettify()
-        lyric_text = lyric_text.split("\n")
-        print(lyric_text)
-        result = ""
-        red = False
-        for item in lyric_text:
-            print(item)
-            if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
-                pass
-            elif '<a class="ReferentFragmentdesktop' in item or '<span' in item or '</span>' in item or '</a>' in item:
-                pass
-            elif "<br/>" in item:
-                result += "\n"
-            elif "<b>" in item or "</b>" in item:
-                if red != True:
-                    red = True
-                    result += "**"
-                else:
-                    pass
-            else:
-                result += item
-                red = False
-        try:
-            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{query}の歌詞""", description=f"""{result}""", color=0x1084fd))
-        except discord.HTTPException:
-            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+        await fetch_lyric(ctx, query)
     
     @commands.Cog.listener()
     async def on_ready(self):
