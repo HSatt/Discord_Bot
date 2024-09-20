@@ -12,7 +12,6 @@ initial_extensions = (
     "cogs.youtube",
     "cogs.twitter",
     "cogs.e",
-    "cogs.diyembed",
     "cogs.hypixel",
     "cogs.voice",
     "cogs.tag",
