@@ -8,7 +8,7 @@ import asyncio
 from pyngrok import ngrok
 from ytnoti import AsyncYouTubeNotifier, Video
 import json
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 from cogs.utils.nosj import nosj
 
 # チャンネル指定
@@ -46,7 +46,7 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
             return
         finally:
             
-            await ctx.reply(embed=await diyembed.getembed(self, title="You rolled a dice...", description=f'''And you've got **{self.gain}** coins!''', author_name='Gamble Addiction',
+            await ctx.reply(embed=await diyembed.getembed(title="You rolled a dice...", description=f'''And you've got **{self.gain}** coins!''', author_name='Gamble Addiction',
                         author_url='https://satt.carrd.co/', author_icon=zunda, thumbnail='', image='', 
                         field1_name='You now have:', field1_value=f'🪙 {bank_info[str(ctx.author.id)]} coins!', 
                         field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda))
@@ -99,7 +99,7 @@ class gamble(commands.Cog): # xyzはcogの名前(ファイル名と同じにす�
                             print(f'[{datetime.datetime.now().strftime('%H:%M:%S')}] {ctx.author.name} has gained {reward} coin(s)!')                 
                             await ctx.reply(f'You gained {reward} coins fr, Now you have {bank_info[str(ctx.author.id)]} coins 🤓')
                 
-                await ctx.reply(embed=await diyembed.getembed(self, title='You used a coin and pulled the lever...', description=result, author_name='Gamble Addiction', author_url='https://satt.carrd.co/',
+                await ctx.reply(embed=await diyembed.getembed(title='You used a coin and pulled the lever...', description=result, author_name='Gamble Addiction', author_url='https://satt.carrd.co/',
                             author_icon=zunda, thumbnail='', image='', field1_name='You now have:', field1_value=f'🪙 {bank_info[str(ctx.author.id)]} coins!', 
                             field2_name='', field2_value='', footer_text="Pasted by Satt", footer_icon=zunda))
                 with open("data/bank_info.json", "w+", encoding="utf-8") as f:

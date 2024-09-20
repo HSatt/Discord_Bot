@@ -4,7 +4,7 @@ import random
 from atproto import Client # type: ignore
 import asyncio
 import json
-from cogs.diyembed import diyembed
+from cogs.utils.diyembed import diyembed
 import diacriticize
 # target list
 fucked = []

@@ -81,12 +81,10 @@ class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                 with open(f"data/Server/twitter_followed/{key}.json", "r", encoding="utf-8") as f:
                     guild_followed = json.load(f)
                 for followed_id in guild_followed:
-                    print(followed_id)
                     if followed_id == user_id:
                         channel = self.bot.get_channel(channel_id)
                         await channel.send(f'New tweet posted from {screen_name}({handshake}): https://fxtwitter.com/{handshake}/status/{tweet.id}')
                     else:
-                        print('pass')
                         pass
 
     async def get_latest_tweet(self, user_id: int) -> Tweet:

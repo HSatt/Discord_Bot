@@ -1,14 +1,15 @@
+import asyncio
+import datetime
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
-import random
-from atproto import Client # type: ignore
-import asyncio
 import json
-import requests
-from bs4 import BeautifulSoup
 import math
-from cogs.diyembed import diyembed
+import random
+import requests
+from atproto import Client  # type: ignore
+from bs4 import BeautifulSoup
+from cogs.utils.diyembed import diyembed
 
 weather_icons = {'晴': '<:weather_01:1285278839018098800>', 
                  '晴一時曇': '<:weather_02:1285278840809324555>', 
@@ -18,7 +19,7 @@ weather_icons = {'晴': '<:weather_01:1285278839018098800>',
                  '晴のち雨': '<:weather_06:1285278847239192690>', 
                  '晴の ち雪': '<:weather_07:1285278848681906287>', 
                  '曇': '<:weather_08:1285278850175074304>', 
-                 '曇一時晴': '<:weather_09:1285278851525644351>', 
+                 '曇時々晴': '<:weather_09:1285278851525644351>', 
                  '曇一時雨': '<:weather_10:1285278853081595979>', 
                  '曇一時雪': '<:weather_11:1285278854780420167>', 
                  '曇のち晴': '<:weather_12:1285278856806268998>', 
@@ -162,7 +163,7 @@ class weather(commands.Cog):
                 elif item in ("- 今日の気象情報", "- 明日の気象情報"):
                     desc += ": " + weathers.pop(0)
                 desc += "\n"
-            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{pref}/{region}の天気""", description=f"""{desc}""", color=0x1084fd))
+            await ctx.reply(embed=await diyembed.getembed(title=f"""{pref}/{region}の天気""", description=f"""{desc}""", color=0x1084fd))
         else:
             await ctx.reply("go tenki jp idiot")
             print("go tenki jp idiot")
@@ -196,7 +197,15 @@ class weather(commands.Cog):
                     desc += "┣"
                 else:
                     desc += "┗"
-                desc += f"{i}時: {onehour_icons[weather_entries[i-1].get_text()]}({weather_entries[i-1].get_text()}) | "
+                if i < 10:
+                    check = f"0{i}"
+                else:
+                    check = i
+                if str(check) == datetime.datetime.now().strftime("%H"):
+                    desc += f"**➺{i}時**: "
+                else:
+                    desc += f"{i}時: "
+                desc += f"{onehour_icons[weather_entries[i-1].get_text()]}({weather_entries[i-1].get_text()}) | "
                 if int(max_min_temp[0].get_text().replace("℃", "")) == int(round(float(temp_entries[i-1].get_text()))):
                     desc += f" 🔺**{temp_entries[i-1].get_text()}°C** | "
                 else:
@@ -207,7 +216,7 @@ class weather(commands.Cog):
                     desc += f"❗***{precip_entries[i-1].get_text()}mm***❗\n"
                 else:
                     desc += f"**{precip_entries[i-1].get_text()}mm**\n"
-            await ctx.reply(embed=await diyembed.getembed(self, title=f"""{pref}/{region}の1時間天気""", description=f"""{desc}""", color=0x1084fd))
+            await ctx.reply(embed=await diyembed.getembed(title=f"""{pref}/{region}の1時間天気""", description=f"""{desc}""", color=0x1084fd))
         else:
             print("go tenki jp idiot")
 
