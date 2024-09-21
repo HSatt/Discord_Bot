@@ -58,7 +58,7 @@ class youtube(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                         break
             except AttributeError:
                 start_time = None
-                return
+                pass
             for guild_id, channel_id in channels.items():
                 guild_followed = nosj.load(f"data/Server/youtube_followed/{guild_id}.json")
                 for followed in guild_followed:
