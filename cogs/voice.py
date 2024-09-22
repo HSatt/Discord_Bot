@@ -4,8 +4,9 @@ from discord.ext.commands import Context
 from discord.ui import Button, View
 from cogs.utils.diyembed import diyembed
 from mutagen.mp3 import MP3
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC, FLACNoHeaderError
 from mutagen.mp3 import HeaderNotFoundError
+from mutagen.id3 import ID3NoHeaderError
 import json
 import math
 import asyncio
@@ -14,7 +15,8 @@ import random
 import requests
 from cogs.utils.nosj import nosj
 from bs4 import BeautifulSoup
-
+from mutagen.id3 import ID3, APIC
+from PIL import Image, ImageSequence, ImageDraw
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 # 9
@@ -30,18 +32,106 @@ path = "data/sounds"
 cpath = "C://Users/hatos/Music"
 npath = "./data/sana"
 
+# 回るレコードを作る(thanks qono)
+def get_disc():
+    disc_gif = Image.open("data/disc.gif")
+    thumbnail = Image.open("data/thumbnail.jpg").convert("RGBA").resize((220, 220))
+    mask = Image.open("data/disc_mask.png").convert("RGBA")
+
+    center_x = disc_gif.width // 2
+    center_y = disc_gif.height // 2
+
+    rotate_per_frame = -360 / 81  # nice hard code!!
+
+    frames = []
+    for i, frame in enumerate(ImageSequence.Iterator(disc_gif)):
+        frame_rgba = frame.convert("RGBA")
+
+        # 画像サイズが違うと怒られるので別のImageに貼り付ける
+        thumb_canvas = Image.new("RGBA", disc_gif.size)
+        thumb = thumbnail.copy().rotate(rotate_per_frame * i)
+
+        # 中心からThumbの位置をthumb/2分引いて、中心に合わせている
+        x = round(center_x - (thumb.width / 2))
+        y = round(center_y - (thumb.height / 2))
+        thumb_canvas.paste(thumb, (x, y))
+        masked = Image.composite(thumb_canvas, frame_rgba, mask)
+        draw = ImageDraw.Draw(masked)
+        draw.ellipse((disc_gif.height / 2 - 13, disc_gif.width / 2 - 13, disc_gif.height / 2 + 12, disc_gif.width / 2 + 12), fill=(0, 0, 0))
+        frames.append(masked)
+
+    # ここはネットから拾ったので何も分かりません
+    frames[0].save(
+        "data/disc_w_cover.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=disc_gif.info["duration"],
+        loop=0,
+    )
+    return "data/disc_w_cover.gif"
+
+google_token = nosj.load("data/!important/google_token.json")
 async def fetch_lyric(ctx, query):
+    params = {"key": google_token,
+          "cx": "b56b70970672e45f2",
+          "q": query,
+          "gl": "ja",
+          "hl": "ja"
+          }
+
+    response = requests.get("https://www.googleapis.com/customsearch/v1", params=params)
+    soup = BeautifulSoup(response.text, features="lxml")
+    text = response.text
+    data = json.loads(text)
+    print(soup)
+    url = ""
+    try:
+        for item in data['items']:
+            print(item['title'])
+            if query in item['title']:
+                url = item['link']
+                thumbnail = item['pagemap']['cse_image'][0]['src']
+                break
+        if url == "":
+            raise KeyError
+        print(url)
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, features="lxml")
+        lyrics = str(soup.select_one("#PriLyr")).split("\n")
+        print(lyrics)
+        if lyrics == ['None']:
+            raise KeyError
+        result = ""
+        for lyric in lyrics:
+            if lyric == '<div class="olyrictext" id="PriLyr">':
+                lyric = ""
+                pass
+            if '<p>' in lyric or '</p>'in lyric or '</div>' in lyric or '<div id="amplified_100005381"><p id="widgetLoaded">' in lyric:
+                lyric = lyric.replace("<p>", "").replace("</p>", "").replace("</div>", "").replace('<div id="amplified_100005381"><p id="widgetLoaded">', "")
+            if "<br/>" in lyric:
+                lyric = lyric.replace("<br/>", "\n").replace("<br/>", "\n")
+            result += lyric
+    except KeyError:
+        await ctx.reply("No results found on lyrical-nonsense.com, trying on Genius.com...")
         bearer_token = nosj.load("data/!important/genius_token.json")
 
         headers = {"Authorization": f"Bearer {bearer_token}"}
 
         response = requests.get(f"https://api.genius.com/search?q={query}", headers=headers)
         try:
-            url = f"https://genius.com/{response.json()["response"]["hits"][0]["result"]["path"]}"
+            for i in range(10):
+                if query.lower() in response.json()["response"]["hits"][i]["result"]["full_title"].lower():
+                    url = response.json()["response"]["hits"][i]["result"]["url"]
+                    thumbnail = response.json()['response']['hits'][i]['result']['song_art_image_url']
+                    break
         except IndexError:
             await ctx.reply("No results found!")
-            raise Exception("No results found!")
+            return
+        if not url:
+            await ctx.reply("No results found!")
+            return
         print(url)
+        print(thumbnail)
         response = requests.get(url)
 
         soup = BeautifulSoup(response.content, 'lxml')
@@ -50,11 +140,9 @@ async def fetch_lyric(ctx, query):
         for lyric in lyrics:
             lyric_text += lyric.prettify()
         lyric_text = lyric_text.split("\n")
-        print(lyric_text)
         result = ""
         red = False
         for item in lyric_text:
-            print(item)
             if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
                 pass
             elif '<a class="ReferentFragmentdesktop' in item or '<span' in item or '</span>' in item or '</a>' in item:
@@ -70,10 +158,12 @@ async def fetch_lyric(ctx, query):
             else:
                 result += item
                 red = False
-        try:
-            await ctx.reply(embed=await diyembed.getembed(title=f"""{query}の歌詞""", description=f"""{result}""", color=0x1084fd))
-        except discord.HTTPException:
-            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+    try:
+        await ctx.reply(embed=await diyembed.getembed(author_icon=zunda, author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/',
+                                                      title=f"""「{query}」の歌詞""", title_url=url, description=f"""{result}""", color=0x1084fd,
+                                                      thumbnail=thumbnail, footer_text="Pasted by Satt", footer_icon=zunda))
+    except discord.HTTPException:
+        await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
 
 # buttons
 class MyView(View):
@@ -241,7 +331,7 @@ class voice(commands.Cog):
                 audio = FLAC(query)
             else:
                 return 0
-            return audio.info.length
+            return f"{f"{int(audio.info.length // 60)} min {round(audio.info.length % 60, 2)} sec" if audio.info.length > 60 else f"{round(audio.info.length, 2)} sec" }"
         except FileNotFoundError:
             print(f"File not found: {query}")
             return 0
@@ -285,7 +375,9 @@ class voice(commands.Cog):
             queue.append(source)
         with open(f"data/voice/np/{self.bot.user.id}.json", "w+", encoding="utf-8") as f:
             json.dump(source, f)
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=source.split('/')[-1].title()))
+        self.get_thumbnail(source)
+        get_disc()
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=f"{self.get_elems(source)["title"]} by {self.get_elems(source)['artist']}"))
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
         ctx.voice_client.play(source, 
                               after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(voice.player(self, ctx, current=current, loop=loop)))
@@ -368,28 +460,126 @@ class voice(commands.Cog):
         wait_search.set()
         print(raw_result)
         return raw_result
+    
+    @staticmethod
+    def get_mp3_thumbnail(file_path):
+        audio = MP3(file_path, ID3=ID3)
+        try:
+            for tag in audio.tags.values():
+                if isinstance(tag, APIC):
+                    with open("data/thumbnail.jpg", "wb") as img:
+                        img.write(tag.data)
+                    return "data/thumbnail.jpg"
+        except AttributeError:
+            return None
+    
+    @staticmethod
+    def get_flac_thumbnail(file_path):
+        audio = FLAC(file_path)
+        try:
+            for picture in audio.pictures:
+                with open("data/thumbnail.jpg", "wb") as img:
+                    img.write(picture.data)
+                return "data/thumbnail.jpg"
+        except AttributeError:
+            return None
+    
+    @staticmethod
+    def get_mp3_elems(file_path):
+        try:
+            audio = MP3(file_path)
+        except ID3NoHeaderError:
+            return 
+        mp3_elems = {}
+        try:
+            for title in audio["TIT2"]:
+                mp3_elems["title"] = title
+        except KeyError:
+            mp3_elems["title"] = file_path.split('/')[-1].replace('.mp3', '').replace(".flac", "").split("_")[0]
+        try:
+            for artist in audio["TPE1"]:
+                mp3_elems["artist"] = artist
+        except KeyError:
+            mp3_elems["artist"] = "Unknown Artist"
+        try:
+            for desc in audio["COMM"]:
+                mp3_elems["desc"] = desc
+        except KeyError:
+            mp3_elems["desc"] = f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.mp3', '').replace(" ", "+")}"
+        return mp3_elems
+
+    @staticmethod
+    def get_flac_elems(file_path):
+        try:
+            audio = FLAC(file_path)
+        except FLACNoHeaderError:
+            return 
+        flac_elems = {}
+        try:
+            for title in audio["title"]:
+                flac_elems["title"] = title
+        except KeyError:
+            flac_elems["title"] = file_path.split('/')[-1].replace('.flac', '').replace(".mp3", "").split("_")[0]
+        try:
+            for artist in audio["artist"]:
+                flac_elems["artist"] = artist
+        except KeyError:
+            flac_elems["artist"] = "Unknown Artist"
+        try:
+            for desc in audio["description"]:
+                 flac_elems["desc"] = desc
+        except KeyError:
+            flac_elems["desc"] = f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.flac', '').replace(" ", "+")}"
+        return flac_elems
+    
+    @staticmethod
+    def get_elems(query):
+        # カバーアート情報取得
+        if query.endswith(".flac") == True:
+            elems = voice.get_flac_elems(file_path=query)
+        elif query.endswith(".mp3") == True:
+            elems = voice.get_mp3_elems(file_path=query)
+        else:
+            elems = None
+        return elems
+    
+    @staticmethod
+    def get_thumbnail(query):
+        # カバーアート情報取得
+        if query.endswith(".flac") == True:
+            thumbnail_path = voice.get_flac_thumbnail(file_path=query)
+        elif query.endswith(".mp3") == True:
+            thumbnail_path = voice.get_mp3_thumbnail(file_path=query)
+        else:
+            thumbnail_path = None
+        if thumbnail_path:
+            print(f"サムネイルを保存しました: {thumbnail_path}")
+            cover = Image.open(thumbnail_path)
+            if cover.height / cover.width != 1:
+                cropped = cover.crop(((cover.width - cover.height) / 2, 0, cover.width - (cover.width - cover.height) / 2, cover.height))
+                cropped.save(thumbnail_path)
+            return thumbnail_path
+        else:
+            print("サムネイルが見つかりませんでした。")
+            return None
 
     @commands.command(aliases=['np'])
     async def nowplaying(self, ctx):
         with open(f"data/voice/np/{self.bot.user.id}.json", "r", encoding="utf-8") as f:
             now_playing = json.load(f)
-        if now_playing.startswith("C://"):
-            path_len = len(cpath)
-        elif now_playing.startswith("data/"):
-            path_len = len(path)
-        else:
-            path_len = len(npath)
         try:
             if ctx.voice_client.is_playing():
-                now_playing_title = now_playing.replace(".flac", "").replace(".mp3", "")
-                now_playing_title = now_playing_title.split("_")[0]
-                view = get_lyric(ctx, query=now_playing_title.split("/")[-1])
-                await ctx.send(view=view, embed=await diyembed.getembed(title=f"""再生中…""", color=0x1084fd, 
-                                                        description=f"{now_playing[path_len:]}, {round(await voice.length(self, query=str(now_playing)), 3)}s", 
-                                                        author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
-                                                        author_icon=zunda, thumbnail=disc,
+                sound_elems = self.get_elems(now_playing)
+                view = get_lyric(ctx, query=sound_elems["title"])
+                cover = discord.File("data/thumbnail.jpg", filename="temp.jpg")
+                disc_cover = discord.File("data/disc_w_cover.gif", filename="disc.gif")
+                await ctx.send(view=view, files=[cover if cover else None, disc_cover if disc_cover else None], embed=await diyembed.getembed(title=f"""▶️ 再生中…""", title_url=sound_elems["desc"], color=0x1084fd, 
+                                                        description=f"{sound_elems['title']} by {sound_elems["artist"]}. \n {await voice.length(self, query=str(now_playing))} \n[[Youtube]({sound_elems['desc']})]", 
+                                                        author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', image="attachment://temp.jpg",
+                                                        author_icon=zunda, thumbnail="attachment://disc.gif", footer_text="Pasted by Satt", footer_icon=zunda
                                                         ))
-        except AttributeError:
+        except Exception as e:
+            print(e)
             await ctx.send(embed=await diyembed.getembed(color=0x1084fd, 
                                                     title=f"何も再生されていません。", 
                                                     author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 

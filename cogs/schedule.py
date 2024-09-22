@@ -15,7 +15,7 @@ def schedule_message(send_time, channel, message):
     scheduler.add_job(send_message, 'date', run_date=send_time, args=[channel, message])
     scheduler.start()
 
-class Schedule(commands.Cog):
+class schedule(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -57,6 +57,7 @@ class Schedule(commands.Cog):
         print(f"Next doku time: {doku_time}")
         scheduler = AsyncIOScheduler()
         scheduler.add_job(self.doku_notification, 'date', run_date=doku_time)
+        scheduler.start()
         doku_time = doku_time.strftime('%Y/%m/%d-%H:%M')
         nosj.save(doku_time, "data/schedule/doku.json")
 
@@ -70,4 +71,4 @@ class Schedule(commands.Cog):
         scheduler.start()
 
 async def setup(bot):
-    await bot.add_cog(Schedule(bot))
+    await bot.add_cog(schedule(bot))

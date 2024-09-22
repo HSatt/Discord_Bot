@@ -12,12 +12,12 @@ initial_extensions = (
     "cogs.youtube",
     "cogs.twitter",
     "cogs.e",
-    "cogs.diyembed",
     "cogs.hypixel",
     "cogs.voice",
     "cogs.tag",
     "cogs.fbridge",
-    "cogs.schedule"
+    "cogs.schedule",
+    "cogs.weather",
 )
 
 description = '''Hello.

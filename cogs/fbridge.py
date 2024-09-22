@@ -1,3 +1,5 @@
+# blyesky.py, twitter.py, youtube.pyのフォローするコマンドを統合するコマンド
+
 import discord
 from discord.ext import commands
 from discord.ui import Button, View
@@ -38,6 +40,7 @@ class follow(commands.Cog):
 
     @commands.command()
     async def follow(self, ctx, target_id):
+        """Bluesky, Twitter, Youtubeのユーザーをフォローします。"""
         view = Follow_Bridge(ctx, target_id)
         await ctx.reply(view=view, embed=await diyembed.getembed(title=f"""どのプラットフォームで"{target_id}"をフォローしますか？""", color=0x1084fd,))
 
