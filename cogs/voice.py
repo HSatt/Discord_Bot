@@ -16,8 +16,7 @@ import requests
 from cogs.utils.nosj import nosj
 from bs4 import BeautifulSoup
 from mutagen.id3 import ID3, APIC
-from PIL import Image, ImageFilter
-
+from PIL import Image, ImageSequence, ImageDraw
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 # 9
@@ -32,6 +31,44 @@ Manage_Channel = 1273134816308625439
 path = "data/sounds"
 cpath = "C://Users/hatos/Music"
 npath = "./data/sana"
+
+def get_disc():
+    disc_gif = Image.open("data/disc.gif")
+    thumbnail = Image.open("data/thumbnail.jpg").convert("RGBA").resize((220, 220))
+    mask = Image.open("data/disc_mask.png").convert("RGBA")
+
+    center_x = disc_gif.width // 2
+    center_y = disc_gif.height // 2
+
+    rotate_per_frame = -360 / 81  # nice hard code!!
+
+    frames = []
+    for i, frame in enumerate(ImageSequence.Iterator(disc_gif)):
+        frame_rgba = frame.convert("RGBA")
+
+        # 画像サイズが違うと怒られるので別のImageに貼り付ける
+        thumb_canvas = Image.new("RGBA", disc_gif.size)
+        thumb = thumbnail.copy().rotate(rotate_per_frame * i)
+
+        # 中心からThumbの位置をthumb/2分引いて、中心に合わせている
+        x = round(center_x - (thumb.width / 2))
+        y = round(center_y - (thumb.height / 2))
+        thumb_canvas.paste(thumb, (x, y))
+        masked = Image.composite(thumb_canvas, frame_rgba, mask)
+        draw = ImageDraw.Draw(masked)
+        draw.ellipse((disc_gif.height / 2 - 13, disc_gif.width / 2 - 13, disc_gif.height / 2 + 12, disc_gif.width / 2 + 12), fill=(0, 0, 0))
+        frames.append(masked)
+
+    # ここはネットから拾ったので何も分かりません
+    frames[0].save(
+        "data/disc_w_cover.gif",
+        save_all=True,
+        append_images=frames[1:],
+        duration=disc_gif.info["duration"],
+        loop=0,
+    )
+    return "data/disc_w_cover.gif"
+
 
 async def fetch_lyric(ctx, query):
     params = {
@@ -530,15 +567,17 @@ class voice(commands.Cog):
                 sound_elems = self.get_elems(now_playing)
                 view = get_lyric(ctx, query=sound_elems["title"])
                 if thumbnail:
-                    file = discord.File(thumbnail, filename="temp.jpg")
+                    cover = discord.File(thumbnail, filename="temp.jpg")
+                    disc_cover = discord.File(get_disc(), filename="disc.gif")
                 else:
                     file = None
-                await ctx.send(view=view, file=file if file else None, embed=await diyembed.getembed(title=f"""▶️ 再生中…""", title_url=sound_elems["desc"], color=0x1084fd, 
+                await ctx.send(view=view, files=[cover if cover else None, disc_cover if disc_cover else None], embed=await diyembed.getembed(title=f"""▶️ 再生中…""", title_url=sound_elems["desc"], color=0x1084fd, 
                                                         description=f"{sound_elems['title']} by {sound_elems["artist"]}. \n {await voice.length(self, query=str(now_playing))} \n[[Youtube]({sound_elems['desc']})]", 
                                                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', image="attachment://temp.jpg",
-                                                        author_icon=zunda, thumbnail=disc, footer_text="Pasted by Satt", footer_icon=zunda
+                                                        author_icon=zunda, thumbnail="attachment://disc.gif", footer_text="Pasted by Satt", footer_icon=zunda
                                                         ))
-        except AttributeError:
+        except Exception as e:
+            print(e)
             await ctx.send(embed=await diyembed.getembed(color=0x1084fd, 
                                                     title=f"何も再生されていません。", 
                                                     author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', 
