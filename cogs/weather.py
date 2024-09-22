@@ -190,14 +190,13 @@ class weather(commands.Cog):
         if forecast_entries:
             print(weather_entries)
             desc = "- 天気 | 気温(°C) | 降水量(mm/h)\n"
-            max_temp = False
             for i in range(1, 25):
                 print(f"{weather_entries[i-1].get_text()} | {temp_entries[i-1].get_text()} | {precip_entries[i-1].get_text()}")
-                if i != 24:
-                    desc += "┣"
+                if i != 24: # 最後の行でないことを確認
+                    desc += "┣" 
                 else:
                     desc += "┗"
-                if i < 10:
+                if i < 10:  # strftimeの時間は0埋めされているので、1桁の数字を0埋めする
                     check = f"0{i}"
                 else:
                     check = i
