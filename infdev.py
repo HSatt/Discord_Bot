@@ -16,7 +16,8 @@ initial_extensions = (
     "cogs.voice",
     "cogs.tag",
     "cogs.fbridge",
-    "cogs.schedule"
+    "cogs.schedule",
+    "cogs.weather",
 )
 
 description = '''Hello.

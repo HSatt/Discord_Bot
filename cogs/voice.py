@@ -4,8 +4,9 @@ from discord.ext.commands import Context
 from discord.ui import Button, View
 from cogs.utils.diyembed import diyembed
 from mutagen.mp3 import MP3
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC, FLACNoHeaderError
 from mutagen.mp3 import HeaderNotFoundError
+from mutagen.id3 import ID3NoHeaderError
 import json
 import math
 import asyncio
@@ -15,6 +16,7 @@ import requests
 from cogs.utils.nosj import nosj
 from bs4 import BeautifulSoup
 from mutagen.id3 import ID3, APIC
+from PIL import Image, ImageFilter
 
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
@@ -32,75 +34,95 @@ cpath = "C://Users/hatos/Music"
 npath = "./data/sana"
 
 async def fetch_lyric(ctx, query):
-        response = requests.get(f"https://cse.google.com/cse/element/v1?rsz=filtered_cse&num=10&hl=ja&source=gcsc&cselibv=8fa85d58e016b414&cx=partner-pub-7926165986285274:9574019542&q={query}&safe=off&cse_tok=AB-tC_7n3mo0LAJWP_wnHMRJBEnw:1726862811339&exp=cc&oq={query}&gs_l=partner-generic.3...14976.23057.0.23940.25.25.0.0.0.2.140.2188.19j6.25.0.csems,nrl=10...0....1j4.34.partner-generic..22.3.311.KQnizfGbYj8&callback=google.search.cse.api12872&rurl=https://www.lyrical-nonsense.com/s?=")
-        response_list = response.text.split('"')
-        for item in response_list:
-            if item == "unescapedUrl":
-                url = response_list[response_list.index(item) + 2]
-                break
+    params = {
+    "rsz": "filtered_cse",
+    "num": "10",
+    "hl": "en",
+    "source": "gcsc",
+    "cselibv": "8fa85d58e016b414",
+    "cx": "b56b70970672e45f2",
+    "q": query,
+    "safe": "off",
+    "cse_tok": "AB-tC_586_2sIdiWhO8a-aVUxI9b:1726955213206",
+    "sort": "",
+    "exp": "cc,pos,dtsq-3",
+    "oq": query,
+    "callback": "google.search.cse.api5771",
+    }
+    response = requests.get(f"https://cse.google.com/cse/element/v1", params=params)
+    start = len('/*O_o*/\ngoogle.search.cse.api5771(')
+    end = len(');')
+    text = response.text[start:-end]
+    data = json.loads(text)
+    url = ""
+    try:
+        for item in data['results']:
+            if str(query)[2:-2] in item['titleNoFormatting']:
+                url = item['unescapedUrl']
+        if url == "":
+            raise KeyError
+        print(url)
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, features="lxml")
+        lyrics = str(soup.select_one("#PriLyr")).split("\n")
+        print(lyrics)
+        if lyrics == ['None']:
+            raise KeyError
+        result = ""
+        for lyric in lyrics:
+            if lyric == '<div class="olyrictext" id="PriLyr">':
+                lyric = ""
+                pass
+            if '<p>' in lyric or '</p>'in lyric or '</div>' in lyric or '<div id="amplified_100005381"><p id="widgetLoaded">' in lyric:
+                lyric = lyric.replace("<p>", "").replace("</p>", "").replace("</div>", "").replace('<div id="amplified_100005381"><p id="widgetLoaded">', "")
+            if "<br/>" in lyric:
+                lyric = lyric.replace("<br/>", "\n").replace("<br/>", "\n")
+            result += lyric
+    except KeyError:
+        await ctx.reply("No results found on lyrical-nonsense.com, trying on Genius.com...")
+        bearer_token = nosj.load("data/!important/genius_token.json")
+
+        headers = {"Authorization": f"Bearer {bearer_token}"}
+
+        response = requests.get(f"https://api.genius.com/search?q={query}", headers=headers)
         try:
-            print(url)
-            response = requests.get(url)
-            soup = BeautifulSoup(response.text, features="lxml")
-            lyrics = str(soup.select_one("#PriLyr")).split("\n")
-            print(lyrics)
-            if lyrics == ['None']:
-                raise NameError
-            result = ""
-            for lyric in lyrics:
-                if lyric == '<div class="olyrictext" id="PriLyr">':
-                    lyric = ""
-                    pass
-                if '<p>' in lyric or '</p>'in lyric or '</div>' in lyric or '<div id="amplified_100005381"><p id="widgetLoaded">' in lyric:
-                    lyric = lyric.replace("<p>", "").replace("</p>", "").replace("</div>", "").replace('<div id="amplified_100005381"><p id="widgetLoaded">', "")
-                if "<br/>" in lyric:
-                    lyric = lyric.replace("<br/>", "\n").replace("<br/>", "\n")
-                result += lyric
-        except NameError:
-            await ctx.reply("No results found on lyrical-nonsense.com, trying on Genius.com...")
-            bearer_token = nosj.load("data/!important/genius_token.json")
+            url = f"https://genius.com/{response.json()["response"]["hits"][0]["result"]["path"]}"
+        except IndexError:
+            await ctx.reply("No results found!")
+            raise Exception("No results found!")
+        print(url)
+        response = requests.get(url)
 
-            headers = {"Authorization": f"Bearer {bearer_token}"}
-
-            response = requests.get(f"https://api.genius.com/search?q={query}", headers=headers)
-            try:
-                url = f"https://genius.com/{response.json()["response"]["hits"][0]["result"]["path"]}"
-            except IndexError:
-                await ctx.reply("No results found!")
-                raise Exception("No results found!")
-            print(url)
-            response = requests.get(url)
-
-            soup = BeautifulSoup(response.content, 'lxml')
-            lyrics = soup.select("#lyrics-root > div.Lyrics__Container-sc-1ynbvzw-1.kUgSbL")
-            lyric_text = ""
-            for lyric in lyrics:
-                lyric_text += lyric.prettify()
-            lyric_text = lyric_text.split("\n")
-            print(lyric_text)
-            result = ""
-            red = False
-            for item in lyric_text:
-                print(item)
-                if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
-                    pass
-                elif '<a class="ReferentFragmentdesktop' in item or '<span' in item or '</span>' in item or '</a>' in item:
-                    pass
-                elif "<br/>" in item:
-                    result += "\n"
-                elif "<b>" in item or "</b>" in item:
-                    if red != True:
-                        red = True
-                        result += "**"
-                    else:
-                        pass
+        soup = BeautifulSoup(response.content, 'lxml')
+        lyrics = soup.select("#lyrics-root > div.Lyrics__Container-sc-1ynbvzw-1.kUgSbL")
+        lyric_text = ""
+        for lyric in lyrics:
+            lyric_text += lyric.prettify()
+        lyric_text = lyric_text.split("\n")
+        print(lyric_text)
+        result = ""
+        red = False
+        for item in lyric_text:
+            print(item)
+            if item in (" <i>", " </i>", '</div>', '', '<div class="Lyrics__Container-sc-1ynbvzw-1 kUgSbL" data-lyrics-container="true">', ):
+                pass
+            elif '<a class="ReferentFragmentdesktop' in item or '<span' in item or '</span>' in item or '</a>' in item:
+                pass
+            elif "<br/>" in item:
+                result += "\n"
+            elif "<b>" in item or "</b>" in item:
+                if red != True:
+                    red = True
+                    result += "**"
                 else:
-                    result += item
-                    red = False
-        try:
-            await ctx.reply(embed=await diyembed.getembed(title=f"""「{query}」の歌詞""", title_url=url, description=f"""{result}""", color=0x1084fd))
-        except discord.HTTPException:
-            await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
+                    pass
+            else:
+                result += item
+                red = False
+    try:
+        await ctx.reply(embed=await diyembed.getembed(title=f"""「{query}」の歌詞""", title_url=url, description=f"""{result}""", color=0x1084fd))
+    except discord.HTTPException:
+        await ctx.reply(f"うわーん！リストが長すぎます！ このレシートは{len(result)}mです！")
 
 # buttons
 class MyView(View):
@@ -268,7 +290,7 @@ class voice(commands.Cog):
                 audio = FLAC(query)
             else:
                 return 0
-            return audio.info.length
+            return f"{f"{int(audio.info.length // 60)} min {round(audio.info.length % 60, 2)} sec" if audio.info.length > 60 else f"{round(audio.info.length, 2)} sec" }"
         except FileNotFoundError:
             print(f"File not found: {query}")
             return 0
@@ -312,7 +334,7 @@ class voice(commands.Cog):
             queue.append(source)
         with open(f"data/voice/np/{self.bot.user.id}.json", "w+", encoding="utf-8") as f:
             json.dump(source, f)
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=source.split('/')[-1].title()))
+        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=self.get_elems(source)["title"]))
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(source))
         ctx.voice_client.play(source, 
                               after=lambda e: print(f'Player error: {e}') if e else self.bot.loop.create_task(voice.player(self, ctx, current=current, loop=loop)))
@@ -418,24 +440,65 @@ class voice(commands.Cog):
                 return "data/thumbnail.jpg"
         except AttributeError:
             return None
+    
+    @staticmethod
+    def get_mp3_elems(file_path):
+        try:
+            audio = MP3(file_path)
+        except ID3NoHeaderError:
+            return 
+        mp3_elems = {}
+        try:
+            for title in audio["TIT2"]:
+                mp3_elems["title"] = title
+        except KeyError:
+            mp3_elems["title"] = file_path.split('/')[-1].replace('.mp3', '').replace(".flac", "").split("_")[0]
+        try:
+            for artist in audio["TPE1"]:
+                mp3_elems["artist"] = artist
+        except KeyError:
+            mp3_elems["artist"] = "Unknown Artist"
+        try:
+            for desc in audio["COMM"]:
+                mp3_elems["desc"] = desc
+        except KeyError:
+            mp3_elems["desc"] = f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.mp3', '').replace(" ", "+")}"
+        return mp3_elems
 
     @staticmethod
-    def get_flac_comment(file_path):
-        audio = FLAC(file_path)
+    def get_flac_elems(file_path):
         try:
-            for comment in audio["description"]:
-                return comment
-        except KeyError:
-            return f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.flac', '').replace(" ", "+")}"
-        
-    @staticmethod
-    def get_flac_title(file_path):
-        audio = FLAC(file_path)
+            audio = FLAC(file_path)
+        except FLACNoHeaderError:
+            return 
+        flac_elems = {}
         try:
             for title in audio["title"]:
-                return title
+                flac_elems["title"] = title
         except KeyError:
-            return file_path.split('/')[-1].replace('.flac', '').replace(".mp3", "").split("_")[0]
+            flac_elems["title"] = file_path.split('/')[-1].replace('.flac', '').replace(".mp3", "").split("_")[0]
+        try:
+            for artist in audio["artist"]:
+                flac_elems["artist"] = artist
+        except KeyError:
+            flac_elems["artist"] = "Unknown Artist"
+        try:
+            for desc in audio["description"]:
+                 flac_elems["desc"] = desc
+        except KeyError:
+            flac_elems["desc"] = f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.flac', '').replace(" ", "+")}"
+        return flac_elems
+    
+    @staticmethod
+    def get_elems(query):
+        # カバーアート情報取得
+        if query.endswith(".flac") == True:
+            elems = voice.get_flac_elems(file_path=query)
+        elif query.endswith(".mp3") == True:
+            elems = voice.get_mp3_elems(file_path=query)
+        else:
+            elems = None
+        return elems
     
     @staticmethod
     def get_thumbnail(query):
@@ -448,6 +511,10 @@ class voice(commands.Cog):
             thumbnail_path = None
         if thumbnail_path:
             print(f"サムネイルを保存しました: {thumbnail_path}")
+            cover = Image.open(thumbnail_path)
+            if cover.height / cover.width != 1:
+                cropped = cover.crop(((cover.width - cover.height) / 2, 0, cover.width - (cover.width - cover.height) / 2, cover.height))
+                cropped.save(thumbnail_path)
             return thumbnail_path
         else:
             print("サムネイルが見つかりませんでした。")
@@ -457,21 +524,17 @@ class voice(commands.Cog):
     async def nowplaying(self, ctx):
         with open(f"data/voice/np/{self.bot.user.id}.json", "r", encoding="utf-8") as f:
             now_playing = json.load(f)
-        if now_playing.startswith("C://"):
-            path_len = len(cpath)
-        elif now_playing.startswith("data/"):
-            path_len = len(path)
-        else:
-            path_len = len(npath)
         try:
             if ctx.voice_client.is_playing():
                 thumbnail = self.get_thumbnail(now_playing)
-                youtube_link = self.get_flac_comment(now_playing)
-                now_playing_title = self.get_flac_title(now_playing)
-                view = get_lyric(ctx, query=now_playing_title)
-                file = discord.File(thumbnail, filename="temp.jpg")
-                await ctx.send(view=view, file=file, embed=await diyembed.getembed(title=f"""再生中…""", title_url=youtube_link, color=0x1084fd, 
-                                                        description=f"{now_playing[path_len:]}, {round(await voice.length(self, query=str(now_playing)), 3)}s, \n[[Youtube]({youtube_link})]", 
+                sound_elems = self.get_elems(now_playing)
+                view = get_lyric(ctx, query=sound_elems["title"])
+                if thumbnail:
+                    file = discord.File(thumbnail, filename="temp.jpg")
+                else:
+                    file = None
+                await ctx.send(view=view, file=file if file else None, embed=await diyembed.getembed(title=f"""▶️ 再生中…""", title_url=sound_elems["desc"], color=0x1084fd, 
+                                                        description=f"{sound_elems['title']} by {sound_elems["artist"]}. \n {await voice.length(self, query=str(now_playing))} \n[[Youtube]({sound_elems['desc']})]", 
                                                         author_name='Soundboard bot for poors', author_url='https://satt.carrd.co/', image="attachment://temp.jpg",
                                                         author_icon=zunda, thumbnail=disc, footer_text="Pasted by Satt", footer_icon=zunda
                                                         ))
