@@ -1,18 +1,11 @@
 import discord
 from discord.ext import commands
-import random
 import datetime
 from atproto import Client # type: ignore
-import time
 import asyncio
-from pyngrok import ngrok
-from ytnoti import AsyncYouTubeNotifier, Video
 import json
 from atproto_client.exceptions import BadRequestError
 from cogs.utils.diyembed import diyembed
-
-# チャンネル指定
-Manage_Channel = 1273134816308625439
 
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
@@ -89,8 +82,13 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
             bsky_followed[id] = bsky_client.get_author_feed(id).feed[0].post.record.text
             with open("data/bsky_followed.json", "w+", encoding="utf-8") as f: # フォロー一覧をセーブする
                 json.dump(bsky_followed, f)
-            with open(f"data/Server/bsky_followed/{ctx.guild.id}.json", "r", encoding="utf-8") as f: # サーバーごとのフォロー一覧を読み込む
-                guild_bsky_followed = json.load(f)
+            try:
+                with open(f"data/Server/bsky_followed/{ctx.guild.id}.json", "r", encoding="utf-8") as f: # サーバーごとのフォロー一覧を読み込む
+                    guild_bsky_followed = json.load(f)
+            except FileNotFoundError:
+                with open(f"data/Server/bsky_followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f:
+                    json.dump([], f)
+                guild_bsky_followed = []
             if not id in guild_bsky_followed:
                 guild_bsky_followed.append(id)
                 with open(f"data/Server/bsky_followed/{ctx.guild.id}.json", "w+", encoding="utf-8") as f: # サーバーごとのフォロー一覧をセーブする
@@ -100,8 +98,8 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
             else:
                 await ctx.reply(f'Already following {id}!')
                 print(f'Already following {id}!')
-        except BadRequestError as e: # BlueskyのIDが間違っている場合出るらしい 一か月前の自分に聞いてくれ
-            await ctx.reply(f'The id you typed is invalid!!!!!!!!!!!: {e}')
+        except BadRequestError: # BlueskyのIDが間違っている場合出るらしい 一か月前の自分に聞いてくれ
+            await ctx.reply(f'The id you typed is invalid!!!!!!!!!!!')
             return
 
     # initializeコマンドの定義
@@ -118,7 +116,6 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
     async def InfStalk(self):
         """Blueskyを10秒おきに覗く"""
         self.dupe_red = False
-        channel = self.bot.get_channel(Manage_Channel)
         while True:
             for id, prev_post in bsky_followed.items():
                 if prev_post == bsky_client.get_author_feed(id).feed[0].post.record.text:
@@ -153,6 +150,4 @@ class bluesky(commands.Cog): # ファイル名と同じにすると良い
         await self.InfStalk()
 
 async def setup(bot: commands.Bot):
-
     await bot.add_cog(bluesky(bot))
-

@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Context
 
-zunda = 'https://i.imgur.com/6bgRNLR.png'
 class diyembed(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -30,5 +29,6 @@ class diyembed(commands.Cog):
             embed.set_footer(text = footer_text, # フッターには開発者の情報でも入れてみる
                                 icon_url = footer_icon)
         return embed
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(diyembed(bot))
