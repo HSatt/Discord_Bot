@@ -12,7 +12,7 @@ def getInfo(call):
     return r.json()
 # hypixel API
 api_key = ''
-with open("data/!important/temp_hypixel_api.json", "r", encoding="utf-8") as f:
+with open("data/!important/hypixel_api.json", "r", encoding="utf-8") as f:
     api_key = json.load(f)
 
 # ずんだもん
