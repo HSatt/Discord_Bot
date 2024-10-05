@@ -88,9 +88,15 @@ class twitter(commands.Cog): # xyzはcogの名前(ファイル名と同じにす
                         pass
 
     async def get_latest_tweet(self, user_id: int) -> Tweet:
-        tweets = await client.get_user_tweets(user_id, 'Tweets')
-        print(tweets)
-        return tweets[0]
+        try:
+            tweets = await client.get_user_tweets(user_id, 'Tweets')
+            print(tweets)
+            return tweets[0]
+        except ReadTimeout:
+            asyncio.sleep(30)
+            tweets = await client.get_user_tweets(user_id, 'Tweets')
+            print(tweets)
+            return tweets[0]
     
     @commands.command(
         name="fetch_tweet", # コマンドの名前。設定しない場合は関数名
