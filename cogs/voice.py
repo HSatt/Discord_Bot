@@ -17,6 +17,7 @@ from cogs.utils.nosj import nosj
 from bs4 import BeautifulSoup
 from mutagen.id3 import ID3, APIC
 from PIL import Image, ImageSequence, ImageDraw
+from pathlib import Path
 # ずんだもん
 zunda = 'https://i.imgur.com/6bgRNLR.png'
 # 9
@@ -28,9 +29,17 @@ disc = "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2VwYm44ODhvcWcwc3g5ZHpkN3d
 # channel
 Manage_Channel = 1273134816308625439
 # paths
-path = "data/sounds"
-cpath = "C://Users/hatos/Music"
-npath = "./data/sana"
+req_paths = {"path": "data/sounds", "cpath": "C://Users/hatos/Music", "npath": "./data/sana"}
+
+# 曲のクラスを定義
+class Song():
+    def __init__(self, artist, title, album, path, desc):
+        self.artist = artist
+        self.album = album
+        self.title = title
+        self.path = path
+        self.desc = desc
+
 
 # 回るレコードを作る(thanks qono)
 def get_disc():
@@ -177,21 +186,21 @@ class MyView(View):
         await interaction.response.send_message("Musicフォルダ内で検索します…", ephemeral=True)
         with open(f"data/voice/lib/music.json", "r", encoding="utf-8") as f:
             voices = json.load(f)
-        await voice.fetch(self, self.ctx, voices=voices, query=self.query, pre_path=cpath)
+        await voice.fetch(self, self.ctx, voices=songs["cpath"], query=self.query, pre_path=req_paths["cpath"])
 
     @discord.ui.button(label="Soundライブラリ", style=discord.ButtonStyle.primary)
     async def sound_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Soundライブラリ内で検索します…", ephemeral=True)
         with open(f"data/voice/lib/sound.json", "r", encoding="utf-8") as f:
             voices = json.load(f)
-        await voice.fetch(self, self.ctx, voices=voices, query=self.query, pre_path=path)
+        await voice.fetch(self, self.ctx, voices=songs["path"], query=self.query, pre_path=req_paths["path"])
 
     @discord.ui.button(label="さなボタン", style=discord.ButtonStyle.primary)
     async def sana_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("さなボタン内で検索します…", ephemeral=True)
         with open(f"data/voice/lib/sana.json", "r", encoding="utf-8") as f:
             voices = json.load(f)
-        await voice.fetch(self, self.ctx, voices=voices, query=self.query, pre_path=npath)
+        await voice.fetch(self, self.ctx, voices=songs["npath"], query=self.query, pre_path=req_paths["npath"])
 
     @discord.ui.button(label="中止", style=discord.ButtonStyle.danger)
     async def cancel_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -223,75 +232,24 @@ class voice(commands.Cog):
         await ctx.reply('Reloaded!')
 
     async def rel(self):
-        global path
-        dirs = [f for f in os.listdir(path) if os.path.isdir(path + "/" + f)]
-        voices = []
-
-        def getmefiles(file):
-            while True:
-                sub_files = os.listdir(path + "/" + dir + "/" + file)
-                print(sub_files)
-                for sub_file in sub_files:
-                    if not "." in sub_file:
-                        print(f"File detected! {sub_file}")
-                        getmefiles(file=(file + "/" + sub_file))
+        global songs
+        songs = {}
+        def get_song_info(target_path, paths, songs):
+            for path in paths:
+                now_path = target_path + path
+                if Path(str(now_path)).is_file():
+                    if Path(str(now_path)).suffix == ".mp3" or Path(str(now_path)).suffix == ".flac":
+                        print(path)
+                        file_elems = self.get_elems(now_path)
+                        song = Song(file_elems["artist"], file_elems["title"], file_elems["album"], now_path, desc=file_elems["comment"])
+                        songs.append(song)
                     else:
-                        file_path = str(dir + "/" + file + "/" + sub_file).lower()
-                        voices.append(file_path)
-                break
-
-        for dir in dirs:
-            if dir == "venv":
-                continue
-            files = os.listdir(path + "/" + dir)
-            for file in files:
-                if not "." in file:
-                    print(f"File detected! {file}")
-                    getmefiles(file)
+                        continue
                 else:
-                    file_path = str(dir + "/" + file).lower()
-                    voices.append(file_path)
-        with open(f"data/voice/lib/sound.json", "w+", encoding="utf-8") as f:
-            json.dump(voices, f)
-        cdirs = [f for f in os.listdir(cpath) if os.path.isdir(cpath + "/" + f)]
-        cvoices = []
-
-        def cgetmefiles(file):
-            while True:
-                sub_files = os.listdir(cpath + "/" + cdir + "/" + file)
-                for sub_file in sub_files:
-                    if not "." in sub_file:
-                        cgetmefiles(file=(file + "/" + sub_file))
-                    else:
-                        file_path = str(cdir + "/" + file + "/" + sub_file).lower()
-                        cvoices.append(file_path)
-                break
-
-        for cdir in cdirs:
-            if cdir == "Music":
-                continue
-            files = os.listdir(cpath + "/" + cdir)
-            for file in files:
-                if not "." in file:
-                    print(f"File detected! {file}")
-                    cgetmefiles(file)
-                else:
-                    file_path = str(cdir + "/" + file).lower()
-                    cvoices.append(file_path)
-        with open(f"data/voice/lib/music.json", "w+", encoding="utf-8") as f:
-            json.dump(cvoices, f)
-
-        ndirs = [f for f in os.listdir(npath) if os.path.isdir(npath + "/" + f)]
-        nvoices = []
-        for dir in ndirs:
-            if dir == "venv":
-                continue
-            files = os.listdir(npath + "/" + dir)
-            for file in files:
-                file_path = str(dir + "/" + file).lower()
-                nvoices.append(file_path)
-        with open(f"data/voice/lib/sana.json", "w+", encoding="utf-8") as f:
-            json.dump(nvoices, f)
+                    get_song_info(now_path, list(str(directory)[len(str(now_path)):] for directory in Path(now_path).iterdir()))
+        for name, path in req_paths.items():
+            songs[name] = []
+            get_song_info(path, list(str(directory)[len(path):] for directory in Path(path).iterdir()), songs[name])
 
 
     async def join(self, ctx: Context):
@@ -389,10 +347,10 @@ class voice(commands.Cog):
 
     async def fetch(self, ctx, voices, query='', pre_path=''):
         query = query.lower()
-        raw_result = [s for s in voices if query in s]
+        raw_result = [s for s in voices if query in s.path.lower()]
         removed = []
         for item in raw_result:
-            if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg"):
+            if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg") or item.endswith(".webp"):
                 print(f"Thumbnail detected! {item}")
                 removed.append(item)
         for removeitem in removed:
@@ -491,21 +449,19 @@ class voice(commands.Cog):
         except ID3NoHeaderError:
             return 
         mp3_elems = {}
-        try:
-            for title in audio["TIT2"]:
-                mp3_elems["title"] = title
-        except KeyError:
-            mp3_elems["title"] = file_path.split('/')[-1].replace('.mp3', '').replace(".flac", "").split("_")[0]
-        try:
-            for artist in audio["TPE1"]:
-                mp3_elems["artist"] = artist
-        except KeyError:
-            mp3_elems["artist"] = "Unknown Artist"
-        try:
-            for desc in audio["COMM"]:
-                mp3_elems["desc"] = desc
-        except KeyError:
-            mp3_elems["desc"] = f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.mp3', '').replace(" ", "+")}"
+        mp3_keys = {"TIT2": ("title", file_path.split('/')[-1].replace('.mp3', '').replace(".flac", "").split("_")[0]),
+                    "TPE1": ("artist", "Unknown Artist"),
+                    "TALB": ("album", "Singles"),
+                    "COMM": ("comment", f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.mp3', '').replace(" ", "+")}")}
+        for key, replacement in mp3_keys.items():
+            try:
+                for value in audio[key]:
+                    if key == "COMM":
+                        mp3_elems[replacement[0]] = f"https://youtu.be/{value}"
+                    else:
+                        mp3_elems[replacement[0]] = value
+            except KeyError:
+                mp3_elems[replacement[0]] = replacement[1]
         return mp3_elems
 
     @staticmethod
@@ -515,34 +471,31 @@ class voice(commands.Cog):
         except FLACNoHeaderError:
             return 
         flac_elems = {}
-        try:
-            for title in audio["title"]:
-                flac_elems["title"] = title
-        except KeyError:
-            flac_elems["title"] = file_path.split('/')[-1].replace('.flac', '').replace(".mp3", "").split("_")[0]
-        try:
-            for artist in audio["artist"]:
-                flac_elems["artist"] = artist
-        except KeyError:
-            flac_elems["artist"] = "Unknown Artist"
-        try:
-            for desc in audio["description"]:
-                 flac_elems["desc"] = desc
-        except KeyError:
-            flac_elems["desc"] = f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.flac', '').replace(" ", "+")}"
+        flac_keys = {"title": file_path.split('/')[-1].replace('.flac', '').replace(".mp3", "").split("_")[0],
+                    "artist": "Unknown Artist",
+                    "album": "Singles",
+                    "comment": f"https://www.youtube.com/results?search_query={file_path.split('/')[-1].replace('.flac', '').replace(" ", "+")}"}
+        for key, replacement in flac_keys.items():
+            try:
+                for value in audio[key]:
+                    if key == "comment":
+                        flac_elems[key] = f"https://youtu.be/{value}"
+                    else:
+                        flac_elems[key] = value
+            except KeyError:
+                flac_elems[key] = replacement
         return flac_elems
-    
-    @staticmethod
-    def get_elems(query):
+
+    def get_elems(self, query):
         # カバーアート情報取得
         if query.endswith(".flac") == True:
-            elems = voice.get_flac_elems(file_path=query)
+            elems = self.get_flac_elems(file_path=query)
         elif query.endswith(".mp3") == True:
-            elems = voice.get_mp3_elems(file_path=query)
+            elems = self.get_mp3_elems(file_path=query)
         else:
             elems = None
         return elems
-    
+
     @staticmethod
     def get_thumbnail(query):
         # カバーアート情報取得
@@ -597,11 +550,11 @@ class voice(commands.Cog):
 
     async def pathlen(self, query):
         if query.startswith("C://"):
-            path_len = len(cpath)
+            path_len = len(req_paths["cpath"])
         elif query.startswith("data/"):
-            path_len = len(path)
+            path_len = len(req_paths["path"])
         else:
-            path_len = len(npath)
+            path_len = len(req_paths["npath"])
         return path_len
 
     @commands.command()
