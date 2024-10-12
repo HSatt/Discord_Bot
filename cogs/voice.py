@@ -246,7 +246,7 @@ class voice(commands.Cog):
                     else:
                         continue
                 else:
-                    get_song_info(now_path, list(str(directory)[len(str(now_path)):] for directory in Path(now_path).iterdir()))
+                    get_song_info(now_path, list(str(directory)[len(str(now_path)):] for directory in Path(now_path).iterdir()), songs[name])
         for name, path in req_paths.items():
             songs[name] = []
             get_song_info(path, list(str(directory)[len(path):] for directory in Path(path).iterdir()), songs[name])
