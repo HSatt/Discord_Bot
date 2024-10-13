@@ -29,7 +29,7 @@ disc = "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2VwYm44ODhvcWcwc3g5ZHpkN3d
 # channel
 Manage_Channel = 1273134816308625439
 # paths
-req_paths = {"path": "data/sounds", "cpath": "C://Users/hatos/Music", "npath": "./data/sana"}
+req_paths = {"path": "data/sounds", "cpath": "C://Users/hatos/Music", "npath": "Data/sana"}
 
 # 曲のクラスを定義
 class Song():
@@ -78,6 +78,20 @@ def get_disc():
         loop=0,
     )
     return "data/disc_w_cover.gif"
+
+def get_song_info(target_path, paths, songs_list):
+    for path in paths:
+        now_path = target_path + "/" + path
+        if Path(str(now_path)).is_file():
+            if Path(str(now_path)).suffix == ".mp3" or Path(str(now_path)).suffix == ".flac":
+                file_elems = voice.get_elems(now_path)
+                song = Song(file_elems["artist"], file_elems["title"], file_elems["album"], now_path[voice.pathlen(now_path):], desc=file_elems["comment"])
+                songs_list.append(song)
+            else:
+                continue
+        else:
+            print(now_path)
+            get_song_info(now_path, list(str(directory)[len(str(now_path)):] for directory in Path(now_path).iterdir()), songs_list)
 
 google_token = nosj.load("data/!important/google_token.json")
 async def fetch_lyric(ctx, query):
@@ -184,23 +198,26 @@ class MyView(View):
     @discord.ui.button(label="Musicフォルダ", style=discord.ButtonStyle.primary)
     async def music_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Musicフォルダ内で検索します…", ephemeral=True)
+        songs = await voice.rel()
         with open(f"data/voice/lib/music.json", "r", encoding="utf-8") as f:
             voices = json.load(f)
-        await voice.fetch(self, self.ctx, voices=songs["cpath"], query=self.query, pre_path=req_paths["cpath"])
-
+        print(songs)
+        print(songs["cpath"])
+        return await voice.fetch(self, self.ctx, voices=songs["cpath"], query=self.query, pre_path=req_paths["cpath"])
+        
     @discord.ui.button(label="Soundライブラリ", style=discord.ButtonStyle.primary)
     async def sound_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Soundライブラリ内で検索します…", ephemeral=True)
         with open(f"data/voice/lib/sound.json", "r", encoding="utf-8") as f:
             voices = json.load(f)
-        await voice.fetch(self, self.ctx, voices=songs["path"], query=self.query, pre_path=req_paths["path"])
+        await voice.fetch(self, self.ctx, voices=voices, query=self.query, pre_path=req_paths["path"])
 
     @discord.ui.button(label="さなボタン", style=discord.ButtonStyle.primary)
     async def sana_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("さなボタン内で検索します…", ephemeral=True)
         with open(f"data/voice/lib/sana.json", "r", encoding="utf-8") as f:
             voices = json.load(f)
-        await voice.fetch(self, self.ctx, voices=songs["npath"], query=self.query, pre_path=req_paths["npath"])
+        await voice.fetch(self, self.ctx, voices=voices, query=self.query, pre_path=req_paths["npath"])
 
     @discord.ui.button(label="中止", style=discord.ButtonStyle.danger)
     async def cancel_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -231,25 +248,16 @@ class voice(commands.Cog):
         await self.rel()
         await ctx.reply('Reloaded!')
 
-    async def rel(self):
+    @staticmethod
+    async def rel():
         global songs
         songs = {}
-        def get_song_info(target_path, paths, songs):
-            for path in paths:
-                now_path = target_path + path
-                if Path(str(now_path)).is_file():
-                    if Path(str(now_path)).suffix == ".mp3" or Path(str(now_path)).suffix == ".flac":
-                        print(path)
-                        file_elems = self.get_elems(now_path)
-                        song = Song(file_elems["artist"], file_elems["title"], file_elems["album"], now_path, desc=file_elems["comment"])
-                        songs.append(song)
-                    else:
-                        continue
-                else:
-                    get_song_info(now_path, list(str(directory)[len(str(now_path)):] for directory in Path(now_path).iterdir()), songs[name])
         for name, path in req_paths.items():
+            print(name)
             songs[name] = []
+            print(songs)
             get_song_info(path, list(str(directory)[len(path):] for directory in Path(path).iterdir()), songs[name])
+        return songs
 
 
     async def join(self, ctx: Context):
@@ -302,12 +310,11 @@ class voice(commands.Cog):
     )
     async def play(self, ctx, query="", player_loop=False):
         """Plays a file from the local filesystem"""
-        await self.search(ctx, query)
+        result = await self.search(ctx, query)
         await wait_search.wait()
         wait_search.clear()
         print("Search done!")
-        with open(f"data/voice/result/search.json", "r", encoding="utf-8") as f:
-            result = json.load(f)
+        print(result)
         if not result:
             await ctx.reply(embed=await diyembed.getembed(color=0x1084fd, 
                                                     description=f"検索結果が見つからなかったか、検索が中止されました。", 
@@ -343,34 +350,28 @@ class voice(commands.Cog):
     @commands.command()
     async def search(self, ctx, query=''):
         view = MyView(ctx, query)
-        return await ctx.reply(view=view, embed=await diyembed.getembed(title=f"""どのライブラリで"{query}"を検索しますか？""", color=0x1084fd,))
+        await ctx.reply(view=view, embed=await diyembed.getembed(title=f"""どのライブラリで"{query}"を検索しますか？""", color=0x1084fd,))
 
     async def fetch(self, ctx, voices, query='', pre_path=''):
+        print(voices)
         query = query.lower()
         raw_result = [s for s in voices if query in s.path.lower()]
-        removed = []
-        for item in raw_result:
-            if item.endswith(".jpg") or item.endswith(".png") or item.endswith(".jpeg") or item.endswith(".webp"):
-                print(f"Thumbnail detected! {item}")
-                removed.append(item)
-        for removeitem in removed:
-            raw_result.remove(removeitem)
         result = ''
         if raw_result == []:
             await ctx.reply('No results found!')
             return raw_result
         print(raw_result)
-        result += f'📁 {raw_result[0].split('/')[0]}\n'
-        prev_dir = raw_result[0].split('/')[0]
+        result += f'📁 {raw_result[0].path.split('/')[0]}\n'
+        prev_dir = raw_result[0].path.split('/')[0]
         for directory in raw_result:
-            if prev_dir != directory.split('/')[0]:
-                result += "📁 " + directory.split('/')[0] + "\n"
-                prev_dir = directory.split('/')[0]
-            if not "." in directory.split('/')[1]:
+            if prev_dir != directory.path.split('/')[0]:
+                result += "📁 " + directory.path.split('/')[0] + "\n"
+                prev_dir = directory.path.split('/')[0]
+            if not "." in directory.path.split('/')[1]:
                 count = 1
-                print(directory.split('/'))
+                print(directory.path.split('/'))
                 while True:
-                    for test in directory.split('/'):
+                    for test in directory.path.split('/'):
                         if not test in result:
                             result += f'**' + 'ᅠ' * (count) + '┗**'
                             if not "." in test:
@@ -382,7 +383,10 @@ class voice(commands.Cog):
                     break
 
             else:
-                result += f'**┗**{directory.split('/')[1]}\n'
+                if directory.path.split('/')[1] == raw_result[raw_result.index(item) + 1].path.split('/')[1]:
+                    result += f'**┣**{directory.path.split('/')[1]}\n'
+                else:
+                    result += f'**┗**{directory.path.split('/')[1]}\n'
         
         try:
             await ctx.reply(embed=await diyembed.getembed(title=f"""You searched for "{query}"...""", color=0x1084fd, description=result, 
@@ -411,12 +415,12 @@ class voice(commands.Cog):
             await ctx.send(embed=await diyembed.getembed(color=0x1084fd, 
                                                                       description=result[3500 * (i + 1) + check:],
                                                                       footer_text="Pasted by Satt", footer_icon=zunda))
+        raw_path = []
         for item in raw_result:
-            raw_result[raw_result.index(item)] = pre_path + "/" + item
+            raw_path.append(item.path)
         with open(f"data/voice/result/search.json", "w+", encoding="utf-8") as f:
-            json.dump(raw_result, f)
+            json.dump(raw_path, f)
         wait_search.set()
-        print(raw_result)
         return raw_result
     
     @staticmethod
@@ -486,12 +490,13 @@ class voice(commands.Cog):
                 flac_elems[key] = replacement
         return flac_elems
 
-    def get_elems(self, query):
+    @staticmethod
+    def get_elems(query):
         # カバーアート情報取得
         if query.endswith(".flac") == True:
-            elems = self.get_flac_elems(file_path=query)
+            elems = voice.get_flac_elems(file_path=query)
         elif query.endswith(".mp3") == True:
-            elems = self.get_mp3_elems(file_path=query)
+            elems = voice.get_mp3_elems(file_path=query)
         else:
             elems = None
         return elems
@@ -548,10 +553,11 @@ class voice(commands.Cog):
         except IndexError:
             await ctx.reply('Invalid index!')
 
-    async def pathlen(self, query):
+    @staticmethod
+    def pathlen(query):
         if query.startswith("C://"):
             path_len = len(req_paths["cpath"])
-        elif query.startswith("data/"):
+        elif query.startswith("data/sounds"):
             path_len = len(req_paths["path"])
         else:
             path_len = len(req_paths["npath"])
